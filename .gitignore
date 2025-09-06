@@ -1,5 +1,5 @@
-# Ignore data directory contents
-/data/
-/scripts/.live_runs/
-*.pdf
-*.json
+__pycache__/
+*.pyc
+*.llm.log
+*.yaml
+job.txt
