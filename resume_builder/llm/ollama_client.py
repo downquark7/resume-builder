@@ -13,4 +13,5 @@ def get_ollama_chat(model: Optional[str] = None, temperature: Optional[float] = 
         base_url=settings.ollama_base_url,
         model=model or settings.ollama_model,
         temperature=settings.llm_temperature if temperature is None else temperature,
+        num_ctx=settings.ollama_num_ctx,
     )
