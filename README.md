@@ -1,38 +1,51 @@
 # Resume Builder (LangChain + Ollama)
 
-This project assembles a tailored resume PDF from a job posting URL and a local `data/` directory containing source information (e.g., `projects.txt`, `transcript.txt`). It also provides a script to review each data file and suggest improvements.
+This project assembles a tailored resume PDF from a job posting URL and a local `data/` directory containing source information (e.g., `projects.txt`, `transcript.txt`, `skills.txt`). It also provides a script to review each data file and suggest improvements, plus a small utility to check the activity status of your Python dependencies.
 
-Ollama (running in Docker) is used as the LLM backend via LangChain.
+Ollama (local LLM server) is used as the LLM backend via LangChain.
 
 ## Project structure
 
 - data/
   - projects.txt
   - transcript.txt
-- src/
-  - resume_builder/
+  - skills.txt
+  - extracurriculars.txt
+  - work history.txt
+- resume_builder/
+  - __init__.py
+  - config.py
+  - llm/
     - __init__.py
-    - config.py
-    - llm/
-      - __init__.py
-      - ollama_client.py
-    - io/
-      - __init__.py
-      - job_fetcher.py
-      - data_loader.py
-    - prompts/
-      - __init__.py
-      - templates.py
-    - chains/
-      - __init__.py
-      - tailor_resume.py
-      - review_file.py
-    - render/
-      - __init__.py
-      - pdf.py
-  - scripts/
-    - fetch_job_and_build_resume.py
-    - review_data_files.py
+    - ollama_client.py
+  - io/
+    - __init__.py
+    - job_fetcher.py
+    - data_loader.py
+  - prompts/
+    - __init__.py
+    - loader.py
+    - templates.py
+    - text/
+      - review_system.txt
+      - review_human.txt
+      - tailoring_system.txt
+      - tailoring_human.txt
+  - chains/
+    - __init__.py
+    - tailor_resume.py
+    - review_file.py
+  - render/
+    - __init__.py
+    - pdf.py
+  - tools/
+    - package_activity.py
+- scripts/
+  - fetch_job_and_build_resume.py
+  - review_data_files.py
+  - check_library_activity.py
+- tests/
+  - ...
 
 ## Installation
 
@@ -42,21 +55,20 @@ Ollama (running in Docker) is used as the LLM backend via LangChain.
 pip install -r requirements.txt
 ```
 
-Dependencies include: langchain, langchain-community, requests, beautifulsoup4, weasyprint (or reportlab), jinja2, pydantic, python-dotenv.
+Key dependencies include: langchain, langchain-community, requests, beautifulsoup4, weasyprint, jinja2, python-dotenv.
 
-2) Ensure Ollama is running in Docker and exposes its HTTP API to the host (default http://localhost:11434). Install desired models (e.g., `llama3`, `llama3.1`, `mistral`):
+2) Ensure Ollama is running and exposes its HTTP API to the host (default http://localhost:11434). Install desired models (e.g., `llama3`, `llama3.1`, `mistral`):
 
 ```
-# inside the Ollama container or via host
 ollama pull llama3
 ```
 
 ## Usage
 
-- Build tailored resume PDF from job URL and local data:
+- Build a tailored resume PDF (or HTML fallback) from a job URL and local data:
 
 ```
-python -m src.scripts.fetch_job_and_build_resume \
+python -m scripts.fetch_job_and_build_resume \
   --url "https://example.com/jobs/123" \
   --data-dir ./data \
   --out ./resume.pdf \
@@ -67,7 +79,7 @@ python -m src.scripts.fetch_job_and_build_resume \
 - Review each file in `data/` and output suggestions:
 
 ```
-python -m src.scripts.review_data_files \
+python -m scripts.review_data_files \
   --data-dir ./data \
   --out suggestions.md \
   --model gpt-oss \
@@ -90,22 +102,22 @@ Notes:
 
 ## Configuration
 
-You can set environment variables or a `.env` file in the project root:
+Set environment variables or a `.env` file in the project root:
 
 - OLLAMA_BASE_URL (default: http://localhost:11434)
 - OLLAMA_MODEL (default: gpt-oss)
 - LLM_TEMPERATURE (default: 0.2)
 
-## Running tests
+These defaults are loaded via `resume_builder.config.settings`.
 
-- Install dev dependencies and run pytest:
+## Running tests
 
 ```
 pip install -r requirements.txt
-pytest
+pytest -q
 ```
 
 ## Notes
 
-- The `transcript.txt` and `projects.txt` in `data/` are simple text sources. You can add more files (e.g., `experience.txt`, `skills.txt`, `certifications.txt`). The system will ingest all `.txt` files.
-- PDF generation can be done with WeasyPrint (HTML -> PDF). If WeasyPrint is not available in your environment, the script will fallback to saving an `.html` file for manual conversion.
+- All `.txt` files in `data/` are ingested automatically (e.g., `experience.txt`, `skills.txt`, `certifications.txt`, `work history.txt`).
+- PDF generation uses WeasyPrint (HTML -> PDF). If WeasyPrint is unavailable or you specify a non-PDF extension, the script writes an `.html` file as a fallback.

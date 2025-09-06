@@ -12,7 +12,7 @@ from resume_builder.config import settings
 from resume_builder.llm.ollama_client import get_ollama_chat
 
 
-def _ollama_up(timeout: float = 2.0) -> bool:
+def _ollama_up(model: str, timeout: float = 2.0) -> bool:
     # Quick TCP check before a tiny LLM call to avoid long hangs.
     try:
         host, port = settings.ollama_base_url.replace("http://", "").replace("https://", "").split(":", 1)
@@ -22,7 +22,7 @@ def _ollama_up(timeout: float = 2.0) -> bool:
         return False
     # Minimal LLM probe
     try:
-        chat = get_ollama_chat()
+        chat = get_ollama_chat(model=model)
         res = chat.invoke("ping: reply with pong")
         txt = res.content if hasattr(res, "content") else str(res)
         return "pong" in txt.lower() or len(txt.strip()) > 0
@@ -30,25 +30,23 @@ def _ollama_up(timeout: float = 2.0) -> bool:
         return False
 
 
-ollama_available = pytest.mark.skipif(not _ollama_up(), reason="Ollama not available or not responding")
-
-
-def _judge_with_llm(prompt: str) -> str:
-    chat = get_ollama_chat()
+def _judge_with_llm(prompt: str, model: str) -> str:
+    chat = get_ollama_chat(model=model)
     res = chat.invoke(prompt)
     return res.content if hasattr(res, "content") else str(res)
-
-
-@ollama_available
-def test_review_data_files_live(tmp_path: Path):
+def test_review_data_files_live(tmp_path: Path, ollama_model: str):
     # Use the real script and the live data folder
     import scripts.review_data_files as mod
+
+    if not _ollama_up(ollama_model):
+        pytest.skip("Ollama not available or model not responding")
 
     out_md = tmp_path / "suggestions.md"
     argv = [
         "prog",
         "--data-dir", str(Path("data").resolve()),
         "--out", str(out_md),
+        "--model", ollama_model,
     ]
     old_argv = sys.argv
     try:
@@ -79,14 +77,16 @@ def test_review_data_files_live(tmp_path: Path):
         f"Suggestions.md content begins:\n{content[:4000]}\n\n"
         "Answer strictly with PASS or FAIL."
     )
-    verdict = _judge_with_llm(judge_prompt).strip().upper()
+    verdict = _judge_with_llm(judge_prompt, model=ollama_model).strip().upper()
     assert verdict.startswith("PASS"), f"LLM judge did not approve suggestions. Verdict: {verdict}"
 
 
-@ollama_available
-def test_check_library_activity_live(tmp_path: Path):
+def test_check_library_activity_live(tmp_path: Path, ollama_model: str):
     # Generate dependency activity report from live requirements
     import scripts.check_library_activity as mod
+
+    if not _ollama_up(ollama_model):
+        pytest.skip("Ollama not available or model not responding")
 
     out_md = tmp_path / "dependency_activity.md"
     argv = [
@@ -111,15 +111,17 @@ def test_check_library_activity_live(tmp_path: Path):
         "Return PASS if it plausibly contains such information for multiple packages; otherwise FAIL.\n\n"
         f"Report content:\n{text[:4000]}\n\nAnswer strictly with PASS or FAIL."
     )
-    verdict = _judge_with_llm(judge_prompt).strip().upper()
+    verdict = _judge_with_llm(judge_prompt, model=ollama_model).strip().upper()
     assert verdict.startswith("PASS"), f"LLM judge did not approve dependency report. Verdict: {verdict}"
 
 
-@ollama_available
-def test_fetch_job_and_build_resume_live(tmp_path: Path):
+def test_fetch_job_and_build_resume_live(tmp_path: Path, ollama_model: str):
     # Use a stable, long public page as a stand-in for a job description to avoid flakiness.
     # Even if it's not a job page, the system should still tailor and render.
     import scripts.fetch_job_and_build_resume as mod
+
+    if not _ollama_up(ollama_model):
+        pytest.skip("Ollama not available or model not responding")
 
     out_pdf = tmp_path / "resume.pdf"
     argv = [
@@ -127,6 +129,7 @@ def test_fetch_job_and_build_resume_live(tmp_path: Path):
         "--url", "https://www.rfc-editor.org/rfc/rfc8259",  # long, stable JSON RFC page
         "--data-dir", str(Path("data").resolve()),
         "--out", str(out_pdf),
+        "--model", ollama_model,
     ]
     old_argv = sys.argv
     try:
@@ -158,5 +161,5 @@ def test_fetch_job_and_build_resume_live(tmp_path: Path):
         f"Sources (snippets): {json.dumps(sources, ensure_ascii=False)[:2000]}\n\n"
         f"Resume JSON: {json.dumps(data, ensure_ascii=False)[:3000]}\n\nAnswer strictly with PASS or FAIL."
     )
-    verdict = _judge_with_llm(judge_prompt).strip().upper()
+    verdict = _judge_with_llm(judge_prompt, model=ollama_model).strip().upper()
     assert verdict.startswith("PASS"), f"LLM judge did not approve tailored resume. Verdict: {verdict}"
