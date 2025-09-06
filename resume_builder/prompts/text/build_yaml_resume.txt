@@ -37,11 +37,10 @@ content:
       position:
       summary:
       keywords: []
-  languages:
-    - language:
-      fluency:
-      keywords: []
   skills:
+    - name:
+      level:
+      keywords: []
     - name:
       level:
       keywords: []
