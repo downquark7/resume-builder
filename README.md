@@ -32,7 +32,7 @@ This project focuses on a rewrite-only pipeline that builds a YAML resume from a
     - __init__.py
     - rewrite_pipeline.py
 - scripts/
-  - rewrite_fetch_job_and_build_yaml_resume.py
+  - build_resume.py
 
 ## Installation
 
@@ -52,10 +52,10 @@ ollama pull llama3
 
 ## Usage
 
-- Rewrite pipeline: Build a YAML resume via staged LLM prompts (clean -> shorten -> YAML). It prints a status message before each LLM call, and logs every LLM output to a file.
+- Rewrite pipeline: Build a YAML resume via staged LLM prompts (clean -> shorten -> YAML). It prints a status message before each LLM call, logs every LLM output to a file, and then attempts to generate a PDF using the yamlresume CLI.
 
 ```
-python -m scripts.rewrite_fetch_job_and_build_yaml_resume \
+python -m scripts.build_resume \
   --job-url "https://example.com/jobs/123" \
   --data-dir ./data \
   --out ./resume.yaml \
@@ -63,6 +63,11 @@ python -m scripts.rewrite_fetch_job_and_build_yaml_resume \
   --temperature 0.2 \
   --log-file ./resume.yaml.llm.log  # optional; by default logs next to --out as <out>.llm.log
 ```
+
+PDF build:
+- By default, after writing the YAML file, the script runs: `yamlresume build <out>`.
+- Ensure the `yamlresume` CLI is installed and available on your PATH. See https://github.com/yamlresume/yamlresume
+- To skip building the PDF, pass `--no-build-pdf`.
 
 Logging:
 - Every LLM output (cleaned description, each per-file shortening, final YAML) is appended to the log file.
@@ -72,10 +77,13 @@ Alternative inputs:
 - --job-file ./job_posting.txt
 - --job-text "paste raw job text here"
 
+No job description:
+- You can omit --job-*, and the script will build a general resume from your data directory without tailoring to a specific job.
+
 What happens:
 - Raw job description is fetched (if URL) and cleaned (boilerplate removed, high-signal kept).
 - Each .txt data file is shortened to up to 5 bullets relevant to the job.
-- A YAML resume matching yamlresume schema is produced, with instruction to reorder and trim to fit.
+- A YAML resume matching the yamlresume schema is produced, with instruction to reorder and trim to fit. Schema source: https://github.com/yamlresume/yamlresume
 - Prompts used for each stage live at resume_builder/prompts/text/*.txt.
 - Important: The final YAML 'skills' section is restricted to only the items present in your data/skills.txt (as selected by the shorten step). The pipeline includes both prompt-level instructions and a post-processing safeguard to prevent adding skills you don't have.
 
@@ -110,6 +118,9 @@ Contact tips:
   - Github: username or https://github.com/username
   - LinkedIn: https://linkedin.com/in/username
 These are passed through without shortening and mapped into the YAML contact section.
+
+Passthrough behavior:
+- Any data file whose name contains the word "information" (e.g., "contact information.txt", "degree information.txt") is passed through verbatim in the shorten stage. This preserves exact content for structured info files.
 
 The system deduplicates exact duplicates and strips leading bullet glyphs (•, -, *). JSON-like strings in LLM output are parsed into lists when rendering.
 

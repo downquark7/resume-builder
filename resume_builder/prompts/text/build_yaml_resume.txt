@@ -1,32 +1,49 @@
-System: You create YAML resumes following the yamlresume schema (https://github.com/yamlresume/yamlresume).
+System: You create YAML resumes that strictly follow the example schema in example-software-engineer.yaml (yamlresume extended schema used by this project). Schema source: https://github.com/yamlresume/yamlresume
 
 Instructions:
-- Input is a cleaned job description and sets of shortened bullets from various categories (experience, projects, skills, education, contact, extras, classes, etc.).
-- Construct a minimal, high-signal YAML resume tailored to the job.
+- Input is an optional cleaned job description and sets of shortened bullets from various categories (experience, projects, skills, education, contact, extras, classes, etc.). If no job is provided, produce a strong general resume from the inputs.
+- Construct a minimal, high-signal YAML resume tailored to the job if provided; otherwise, construct a strong general resume from the inputs.
 - You may reorder sections and remove unnecessary items to fit within 1 page when rendered.
 - Favor achievements and matching technologies. Avoid duplication across sections.
 - Ensure valid YAML. No markdown fences. Keep values concise. Use lists for bullet points.
-- Provide standard sections: name, contact, summary, skills, experience, projects, education, extras (optional). Use available inputs only.
+- IMPORTANT: The top-level keys MUST be exactly two: `content` and `layout`. All resume data goes under `content`, and print settings under `layout`.
 
 STRICT CONSTRAINTS (must follow exactly):
 - Do NOT invent or add any content that is not present in the provided shortened selections.
-- skills section: include ONLY items that appear in the [skills] shortened selection (verbatim or simple casing/pluralization changes). Never add skills from the job description unless they are present in [skills].
+- Skills: include ONLY items that appear in the [skills] shortened selection (verbatim or simple casing/pluralization changes). Never add skills from the job description unless they are present in [skills].
 - experience/projects/education/extras: only use content from their respective categories. You may reorder/trim but not fabricate.
 - If a section has no provided input, omit that section.
 
-YAML field guidance (flexible, but keep consistent):
-- name: from contact if available; do not invent.
-- contact: include any of email, phone, website, github, linkedin if present in the contact source. Use simple keys: email, phone, github, linkedin, website. Omit if unavailable.
-- summary: 2-4 lines focusing on alignment to job; summarize without adding new facts.
-- skills: list of 8-15 key terms matching the role, but ONLY drawn from [skills] input.
-- experience: list of items; each item may include: title, company, location (optional), dates (optional), details (list of bullets).
-- projects: list of items with name and description; details bullets optional.
-- education: list of items (degree, institution, dates/course highlights as bullets).
-- extras: optional list of short items (certs, awards, activities) only if relevant.
+Target YAML schema under `content` (use only fields you have data for):
+- basics:
+  - name
+  - headline (optional; brief title)
+  - phone, email, url (from contact; use available keys only)
+  - summary: multi-line string (|) with 2-6 short bullets, each starting with "- "
+- location: address, city, region, country, postalCode (only if present)
+- profiles: list of {network, url, username} (only if present in contact data)
+- education: list of {institution, url?, degree?, area?, score?, startDate?, endDate?, courses?, summary?}
+- work: list of {name (company), url?, startDate?, endDate?, position (title), summary (|-bullets), keywords?}
+- languages: list of {language, fluency, keywords?}
+- skills: list of {name (category), level?, keywords (list of specific skills)} OR a flat list if only flat skills are provided; prefer grouped form if categories exist in inputs
+- awards, certificates, publications, references, projects, interests, volunteer: match the example file structures.
 
-Contact parsing hints:
-- If contact bullets look like "Email: xyz@...", map to contact.email. "Phone:" -> contact.phone. "Github:" or "GitHub:" -> contact.github (prefer username or full URL if given). "LinkedIn:" -> contact.linkedin.
-- Preserve exact casing of the name, but normalize contact keys to lowercase.
+Layout block (provide minimal sane defaults if missing):
+- layout:
+  - locale: { language: en }
+  - margins: { top: 2.5cm, left: 1.5cm, right: 1.5cm, bottom: 2.5cm }
+  - page: { showPageNumbers: true }
+  - template: moderncv-banking
+  - typography: { fontSize: 11pt }
+
+Mapping guidance from inputs to schema:
+- Contact: map to basics.name (if provided), basics.email, basics.phone, basics.url; additionally, if GitHub/LinkedIn/etc. are provided, add to content.profiles as items with network + url/username.
+- Summary: condense to bullet-y list under basics.summary using |-style with "- " bullets.
+- Experience -> content.work (company -> name, title -> position, dates -> startDate/endDate if parseable, otherwise keep a single line in summary bullets). If only a single "dates" string is present, keep it in the summary bullets.
+- Projects -> content.projects with name, description, optional keywords; if dates present, map to startDate/endDate.
+- Education -> content.education mapping degree/institution/dates; put course highlights in courses.
+- Skills -> If you only have a flat list, you may emit content.skills as a flat YAML list. Do not synthesize categories/levels.
+- Extras -> map into interests or awards/certificates if clearly labeled; otherwise leave under content.interests as simple named items.
 
 Inputs:
 Cleaned job description:
@@ -36,4 +53,4 @@ Shortened selections by category (each line is a bullet):
 {{shortened_map}}
 
 Output:
-A single valid YAML document suitable for yamlresume.
+A single valid YAML document with exactly two top-level keys: content and layout, conforming to example-software-engineer.yaml.

@@ -64,8 +64,9 @@ def shorten_sources(cleaned_job: str, sources: Dict[str, str], cfg: RewriteConfi
         if not text.strip():
             continue
         cat_lower = category.lower().strip()
-        # Pass-through for contact info: do not "shorten"; preserve raw lines as-is
-        if cat_lower in {"contact", "contact information", "contact_information"}:
+        # Pass-through for contact info and any category whose filename contains 'information'
+        # Rationale: any file with 'information' in its name will be short enough that shortening it twice could result in loss of information.
+        if "information" in cat_lower:
             raw = text.strip()
             _append_log(cfg.log_file, "shorten_file", raw, extra=f"category={category} (passthrough)")
             shortened[category] = raw
@@ -83,7 +84,7 @@ def _normalize_skill(s: str) -> str:
 
 def _filter_skills_in_yaml(yaml_text: str, allowed_skills: set[str]) -> str:
     """
-    Very lightweight post-processor: if a 'skills:' YAML list is present at top level,
+    Very lightweight post-processor: if a 'skills:' YAML list is present at top level (either at root or under 'content:'),
     drop any items that are not in allowed_skills (normalized). This is a best-effort
     safeguard against LLM adding skills from the job that the user doesn't have.
     Keeps original casing for items that match case-insensitively.
@@ -95,8 +96,8 @@ def _filter_skills_in_yaml(yaml_text: str, allowed_skills: set[str]) -> str:
         in_skills = False
         current_indent = None
         for i, line in enumerate(lines):
-            # Detect start of top-level skills list
-            if not in_skills and re.match(r"^skills:\s*$", line):
+            # Detect start of top-level skills list either at root or under content
+            if not in_skills and (re.match(r"^skills:\s*$", line) or re.match(r"^\s{2}skills:\s*$", line) or re.match(r"^\s+skills:\s*$", line)):
                 in_skills = True
                 current_indent = None
                 out_lines.append(line)
@@ -180,15 +181,19 @@ def build_yaml_resume(cleaned_job: str, shortened_map: Dict[str, str], cfg: Rewr
     return filtered
 
 
-def run_rewrite(job_text_or_url: str, data_dir: str | None, cfg: RewriteConfig) -> str:
-    # If looks like URL, fetch; otherwise treat as raw text
-    raw_job = job_text_or_url
-    if job_text_or_url.lower().startswith("http://") or job_text_or_url.lower().startswith("https://"):
+def run_rewrite(job_text_or_url: str | None, data_dir: str | None, cfg: RewriteConfig) -> str:
+    # If looks like URL, fetch; otherwise treat as raw text. If not provided, use an empty job description.
+    raw_job = job_text_or_url or ""
+    if job_text_or_url and (job_text_or_url.lower().startswith("http://") or job_text_or_url.lower().startswith("https://")):
         print("Fetching job posting from URL...")
         raw_job = fetch_job_text(job_text_or_url)
 
-    print("Cleaning job description...")
-    cleaned = clean_job_description(raw_job, cfg)
+    if raw_job.strip():
+        print("Cleaning job description...")
+        cleaned = clean_job_description(raw_job, cfg)
+    else:
+        print("No job description provided; proceeding using data only.")
+        cleaned = ""
 
     sources: Dict[str, str] = {}
     if data_dir:
