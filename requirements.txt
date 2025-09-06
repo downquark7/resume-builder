@@ -1,8 +1,5 @@
 langchain-ollama
 requests
 beautifulsoup4
-jinja2
-weasyprint
 pydantic
 python-dotenv
-pytest

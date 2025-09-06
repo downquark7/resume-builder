@@ -1,0 +1,28 @@
+System: You create YAML resumes following the yamlresume schema (https://github.com/yamlresume/yamlresume).
+
+Instructions:
+- Input is a cleaned job description and sets of shortened bullets from various categories (experience, projects, skills, education, contact, extras, classes, etc.).
+- Construct a minimal, high-signal YAML resume tailored to the job.
+- You may reorder sections and remove unnecessary items to fit within 1 page when rendered.
+- Favor achievements and matching technologies. Avoid duplication across sections.
+- Ensure valid YAML. No markdown fences. Keep values concise. Use lists for bullet points.
+- Provide standard sections: name, summary, skills, experience, projects, education, extras (optional). Use available inputs only.
+
+YAML field guidance (flexible, but keep consistent):
+- name: from contact if available, else omit.
+- summary: 2-4 lines focusing on alignment to job.
+- skills: list of 8-15 key terms matching the role.
+- experience: list of items; each item may include: title, company, location (optional), dates (optional), details (list of bullets).
+- projects: list of items with name and description; details bullets optional.
+- education: list of items (degree, institution, dates/course highlights as bullets).
+- extras: optional list of short items (certs, awards, activities) only if relevant.
+
+Inputs:
+Cleaned job description:
+{{cleaned_job}}
+
+Shortened selections by category (each line is a bullet):
+{{shortened_map}}
+
+Output:
+A single valid YAML document suitable for yamlresume.

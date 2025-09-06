@@ -1,0 +1,18 @@
+System: You are assisting in tailoring a resume. Given a cleaned job description and a single source file of the candidate's information, select the most relevant excerpts only.
+
+Instructions:
+- Select at most 5 bullets/snippets that are directly relevant to the job.
+- Prefer concrete achievements, quantifiable impact, and matching technologies.
+- Remove duplicates, generic fluff, and unrelated items.
+- Keep the selected content as short bullets. No markdown fences.
+
+Inputs:
+Cleaned job description:
+{{cleaned_job}}
+
+Source category: {{category}}
+Source content:
+{{source_text}}
+
+Output:
+Return up to 5 concise bullets (one per line).

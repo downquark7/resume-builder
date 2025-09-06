@@ -1,10 +1,6 @@
 # Resume Builder (LangChain + Ollama)
 
-This project assembles a tailored resume PDF (or HTML fallback) from a job posting URL and a local `data/` directory containing your source information (e.g., `projects.txt`, `skills.txt`, `work history.txt`, `contact information.txt`). It also includes:
-- A script to review each data file and suggest improvements.
-- A utility to check the recent activity of your Python dependencies.
-
-Ollama (local LLM server) is used as the LLM backend via LangChain.
+This project focuses on a rewrite-only pipeline that builds a YAML resume from a job posting and your local `data/` directory. Ollama (local LLM server) is used via LangChain.
 
 ## Project structure
 
@@ -27,30 +23,16 @@ Ollama (local LLM server) is used as the LLM backend via LangChain.
     - job_fetcher.py
     - data_loader.py
   - prompts/
-    - __init__.py
     - loader.py
-    - templates.py
     - text/
-      - review_system.txt
-      - review_human.txt
-      - tailoring_system.txt
-      - tailoring_human.txt
+      - clean_job_description.txt
+      - shorten_file.txt
+      - build_yaml_resume.txt
   - chains/
     - __init__.py
-    - tailor_resume.py
-    - review_file.py
-  - render/
-    - __init__.py
-    - pdf.py
-  - tools/
-    - package_activity.py
+    - rewrite_pipeline.py
 - scripts/
-  - fetch_job_and_build_resume.py
-  - review_data_files.py
-  - check_library_activity.py
-  - system_live_test.py (manual live check)
-- tests/
-  - ...
+  - rewrite_fetch_job_and_build_yaml_resume.py
 
 ## Installation
 
@@ -60,7 +42,7 @@ Ollama (local LLM server) is used as the LLM backend via LangChain.
 pip install -r requirements.txt
 ```
 
-Key dependencies include: langchain-ollama, requests, beautifulsoup4, weasyprint, jinja2, pydantic, python-dotenv. The LangChain integration is provided via the `langchain-ollama` package.
+Key dependencies include: langchain-ollama, requests, beautifulsoup4, pydantic, python-dotenv. The LangChain integration is provided via the `langchain-ollama` package.
 
 2) Ensure Ollama is running and exposes its HTTP API (default http://localhost:11434). Install desired models (e.g., `llama3`, `mistral`, or your preferred compatible model):
 
@@ -70,51 +52,31 @@ ollama pull llama3
 
 ## Usage
 
-- Build a tailored resume PDF (or HTML fallback) from a job URL and local data:
+- Rewrite pipeline: Build a YAML resume via staged LLM prompts (clean -> shorten -> YAML). It prints a status message before each LLM call, and logs every LLM output to a file.
 
 ```
-python -m scripts.fetch_job_and_build_resume \
-  --url "https://example.com/jobs/123" \
+python -m scripts.rewrite_fetch_job_and_build_yaml_resume \
+  --job-url "https://example.com/jobs/123" \
   --data-dir ./data \
-  --out ./resume.pdf \
+  --out ./resume.yaml \
   --model gpt-oss \
-  --temperature 0.2
+  --temperature 0.2 \
+  --log-file ./resume.yaml.llm.log  # optional; by default logs next to --out as <out>.llm.log
 ```
+
+Logging:
+- Every LLM output (cleaned description, each per-file shortening, final YAML) is appended to the log file.
+- Default log path: if --log-file is not provided, it will write to <out>.llm.log next to your --out.
+
+Alternative inputs:
+- --job-file ./job_posting.txt
+- --job-text "paste raw job text here"
 
 What happens:
-- The job posting is fetched and cleaned.
-- All `.txt` files in `--data-dir` are loaded. Some filenames are normalized (aliases):
-  - "work history" / "work_history" -> "experience"
-  - "contact information" / "contact_information" -> "contact"
-- The LLM tailors a structured JSON resume.
-- The renderer normalizes lists, deduplicates overlapping projects vs experience, and writes a PDF (or HTML if PDF not available).
-- A sidecar `resume.json` (same basename as `--out`) is saved with the raw structured output.
-
-Tip: Put your name into a `name.txt` file to have it appear as the H1 title.
-
-- Review each file in `data/` and output suggestions:
-
-```
-python -m scripts.review_data_files \
-  --data-dir ./data \
-  --out suggestions.md \
-  --model gpt-oss \
-  --temperature 0.3
-```
-
-- Generate a dependency activity report (PyPI + GitHub):
-
-```
-python -m scripts.check_library_activity \
-  --requirements requirements.txt \
-  --out dependency_activity.md \
-  --months-active 12 \
-  --months-quiet 24
-```
-
-Notes:
-- You can also pass explicit packages instead of using requirements.txt: `python -m scripts.check_library_activity --packages langchain-ollama jinja2`.
-- Set a GitHub token via GH_TOKEN or GITHUB_TOKEN env var to raise rate limits.
+- Raw job description is fetched (if URL) and cleaned (boilerplate removed, high-signal kept).
+- Each .txt data file is shortened to up to 5 bullets relevant to the job.
+- A YAML resume matching yamlresume schema is produced, with instruction to reorder and trim to fit.
+- Prompts used for each stage live at resume_builder/prompts/text/*.txt.
 
 ## Configuration
 
@@ -140,35 +102,12 @@ Any `.txt` file under `data/` becomes a key in the prompt using its basename. Co
 
 The system deduplicates exact duplicates and strips leading bullet glyphs (•, -, *). JSON-like strings in LLM output are parsed into lists when rendering.
 
-## Running tests
+## Notes
 
-```
-pip install -r requirements.txt
-pytest -q
-```
-
-Live system tests are separated to avoid long, slow runs by default. You can also run a manual live system script with extra debug:
-
-```
-python -m scripts.system_live_test --verbose
-```
-
-Options:
-- --model MODEL           Ollama model to use (default: from env OLLAMA_MODEL)
-- --only {review,activity,resume}  Run just one check
-- --work-dir PATH        Directory for outputs (default: ./.live_runs)
-
-Note: the live checks assume an Ollama server is running and the chosen model is available locally. If Ollama is unreachable, the script will print a skip message and exit 0.
-
-Logging: The live test script logs the prompt (truncated to 1000 chars) with model name to stdout with the prefix [llm]. Be mindful of sensitive information in prompts when sharing logs.
+- Ensure Ollama HTTP API is reachable (default http://localhost:11434) and that your chosen model is pulled locally.
+- Be mindful of sensitive information in prompts when sharing logs; the rewrite script logs all LLM outputs to a file.
 
 ## Maintenance notes
 
 - All `.txt` files in `data/` are ingested automatically (e.g., `experience.txt`, `skills.txt`, `certifications.txt`, `work history.txt`, `contact information.txt`).
-- PDF generation uses WeasyPrint (HTML -> PDF). If WeasyPrint is unavailable or you specify a non-PDF extension, the script writes an `.html` file as a fallback.
-- Renderer normalizes list fields and deduplicates projects that duplicate an experience item by title.
-
-Suggested cleanup (optional): Review and delete any unused artifacts in your local clone to keep the repo tidy.
-- scripts/.live_runs/ contents are ephemeral outputs produced by scripts.system_live_test; you can safely delete files under this directory at any time.
-- data/* sample files can be pruned to only those you actually use; the code simply ingests whatever .txt files are present.
-- If you have legacy test files relocated into scripts/ (e.g., an older tests/test_system_scripts_live.py), remove the obsolete copy if it still exists outside scripts/.
+- Suggested cleanup: prune data/* samples you don’t use; the code ingests whatever .txt files are present.

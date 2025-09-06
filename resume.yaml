@@ -1,0 +1,44 @@
+summary:
+  - "Aspiring software engineer with a strong foundation in C#, Azure, and data visualization."
+  - "Experienced in developing scalable applications and implementing design patterns."
+  - "Eager to support Constellation’s clean‑energy operations through robust software solutions."
+skills:
+  - C#
+  - Azure
+  - SCADA
+  - Historian databases
+  - Power BI
+  - NERC/CIP
+  - C/C++
+  - Linux
+  - SQL
+  - NoSQL
+  - Design patterns
+  - Algorithms
+  - Git
+  - Windows
+projects:
+  - name: Interactive Terminal Game
+    description: "Procedural map generation and state‑management using C++ and ncurses."
+  - name: TrueNAS Scale NAS
+    description: "Linux system administration with ZFS, SMB/NFS, and automated snapshot backups."
+  - name: Docker‑Compose Web Deployment
+    description: "Secure containerized environments for web applications."
+  - name: RESTful API for Android Scheduler
+    description: "Java Spring Boot backend with database schema design."
+  - name: Gentoo Linux KDE Plasma
+    description: "Wayland‑enabled Mesa stack and SDDM setup."
+education:
+  - degree: Bachelor of Arts in Computer Science
+    institution: Iowa State University
+    dates: Fall 2019 – Spring 2025
+    highlights:
+      - Software Development Practices (agile, version control, automated testing)
+      - Object‑Oriented Analysis & Design (SOLID, class diagrams)
+      - Advanced Programming Techniques (C# optimization, LINQ, design patterns)
+      - Design & Analysis of Algorithms (complexity, efficient data structures)
+      - Technical Communication (clear documentation, stakeholder presentations)
+extras:
+  - "Led programming of autonomous and driver‑controlled Java‑based robots for FTC, earning multiple Control Awards and two World Championship appearances."
+  - "Mentored team members in software development, fostering collaboration and adherence to coding standards."
+  - "Developed teamwork, discipline, and time‑management skills through intensive rehearsals and high‑profile performances."

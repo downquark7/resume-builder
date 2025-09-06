@@ -1,0 +1,59 @@
+Analyst IT - Software Engineer
+
+    Baltimore, Maryland; Chicago, Illinois; Warrenville, Illinois; Houston, Texas; Kennett Square, Pennsylvania
+    Information Technology
+    Hybrid
+    129439
+    NE4- NE4 Non Exempt Ladder
+
+mail_outline
+
+Get future jobs matching this search
+or
+Job Description
+
+WHO WE ARE
+
+As the nation's largest producer of clean, carbon-free energy, Constellation is focused on our purpose: accelerating the transition to a carbon-free future. We have been the leader in clean energy production for more than a decade, and we are cultivating a workplace where our employees can grow, thrive, and contribute.
+
+Our culture and employee experience make it clear: We are powered by passion and purpose. Together, we're creating healthier communities and a cleaner planet, and our people are the driving force behind our success. At Constellation, you can build a fulfilling career with opportunities to learn, grow and make an impact. By doing our best work and meeting new challenges, we can accomplish great things and help fight climate change. Join us to lead the clean energy future.
+
+TOTAL REWARDS
+
+Constellation offers a wide range of benefits and rewards to help our employees thrive professionally and personally. We provide competitive compensation and benefits that support both employees and their families, helping them prepare for the future. In addition to highly competitive salaries, we offer a bonus program, 401(k) with company match, employee stock purchase program; comprehensive medical, dental and vision benefits, including a robust wellness program; paid time off for vacation, holidays, and sick days; and much more.
+
+Expected salary range of $83,700 to $93,000, varies based on experience, along with comprehensive benefits package that includes bonus and 401(k).
+
+PRIMARY PURPOSE OF POSITION
+
+Performs activities relating to analysis, evaluation, building, programming, testing, correcting, implementing, operating or supporting existing and planned IT products and processes under the general direction of more experienced personnel. Expands and applies knowledge of customer process to job activities. Works under direct supervision and follows standard procedures to accomplish assigned tasks.
+
+
+
+PRIMARY DUTIES AND ACCOUNTABILITIES
+
+    As directed, perform and document work activities related to analysis, evaluation, building, testing, or implementing planned IT software solutions and processes and/or enhance, maintain or support existing products/processes as per defined services level agreements.
+    Acquire and apply business/IT knowledge.
+    Organize own activities for short term or sub-project/components under the direction of experienced personnel and reports on status.
+    Gain product experience and technical skills through assigned role and training.
+    Ensure adherence to standards as outlined in the management model. Utilize best practices to improve products and services.
+
+
+
+MINIMUM QUALIFICATIONS
+
+    Typically 0-2 years experience in related experience in Software Development
+    Appropriate technical skills: C# and Azure
+    Ability to understand and communicate customer issues
+    Ability to work independently
+    Strong communication skills (written and verbal)
+
+PREFERRED QUALIFICATIONS
+
+    Bachelor's degree in Computer Science preferred
+    Experience with development of SCADA systems (e.g. OSI Monarch), historian databases (e.g. OSISoft PI) and data visualization tools (e.g. MS PowerBI)
+    Experience with NERC/CIP guidelines and requirements.
+    Experience in C, C++ and C#
+    Knowledge of Operating Systems - Windows, Solaris or Linux; or knowledge of Azure cloud platform.
+    Understanding of advanced programming concepts, data structure, design patterns and algorithms
+    Knowledge of SQL or NoSQL databases - Oracle, SQL Server, Cosmos DB, MySQL, Redis, Splunk
