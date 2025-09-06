@@ -6,16 +6,27 @@ Instructions:
 - You may reorder sections and remove unnecessary items to fit within 1 page when rendered.
 - Favor achievements and matching technologies. Avoid duplication across sections.
 - Ensure valid YAML. No markdown fences. Keep values concise. Use lists for bullet points.
-- Provide standard sections: name, summary, skills, experience, projects, education, extras (optional). Use available inputs only.
+- Provide standard sections: name, contact, summary, skills, experience, projects, education, extras (optional). Use available inputs only.
+
+STRICT CONSTRAINTS (must follow exactly):
+- Do NOT invent or add any content that is not present in the provided shortened selections.
+- skills section: include ONLY items that appear in the [skills] shortened selection (verbatim or simple casing/pluralization changes). Never add skills from the job description unless they are present in [skills].
+- experience/projects/education/extras: only use content from their respective categories. You may reorder/trim but not fabricate.
+- If a section has no provided input, omit that section.
 
 YAML field guidance (flexible, but keep consistent):
-- name: from contact if available, else omit.
-- summary: 2-4 lines focusing on alignment to job.
-- skills: list of 8-15 key terms matching the role.
+- name: from contact if available; do not invent.
+- contact: include any of email, phone, website, github, linkedin if present in the contact source. Use simple keys: email, phone, github, linkedin, website. Omit if unavailable.
+- summary: 2-4 lines focusing on alignment to job; summarize without adding new facts.
+- skills: list of 8-15 key terms matching the role, but ONLY drawn from [skills] input.
 - experience: list of items; each item may include: title, company, location (optional), dates (optional), details (list of bullets).
 - projects: list of items with name and description; details bullets optional.
 - education: list of items (degree, institution, dates/course highlights as bullets).
 - extras: optional list of short items (certs, awards, activities) only if relevant.
+
+Contact parsing hints:
+- If contact bullets look like "Email: xyz@...", map to contact.email. "Phone:" -> contact.phone. "Github:" or "GitHub:" -> contact.github (prefer username or full URL if given). "LinkedIn:" -> contact.linkedin.
+- Preserve exact casing of the name, but normalize contact keys to lowercase.
 
 Inputs:
 Cleaned job description:

@@ -77,6 +77,7 @@ What happens:
 - Each .txt data file is shortened to up to 5 bullets relevant to the job.
 - A YAML resume matching yamlresume schema is produced, with instruction to reorder and trim to fit.
 - Prompts used for each stage live at resume_builder/prompts/text/*.txt.
+- Important: The final YAML 'skills' section is restricted to only the items present in your data/skills.txt (as selected by the shorten step). The pipeline includes both prompt-level instructions and a post-processing safeguard to prevent adding skills you don't have.
 
 ## Configuration
 
@@ -86,9 +87,10 @@ Set environment variables or a `.env` file in the project root:
 - OLLAMA_MODEL (default: gpt-oss)
 - LLM_TEMPERATURE (default: 0.2)
 - OLLAMA_NUM_CTX (default: 8192) — increases the model context window used for requests to reduce truncation issues with larger prompts.
-- RENDER_WITH_LLM (default: false) — when true, and if the Ollama client is available, the final HTML composition is delegated to the LLM which may re-order sections and trim lists. Otherwise a deterministic Jinja2 template is used.
 
-These defaults are loaded via `resume_builder.config.settings` (except `RENDER_WITH_LLM`, which is read within the renderer).
+These defaults are loaded via `resume_builder.config.settings`.
+
+Note: This project currently outputs a YAML resume only; there is no HTML rendering step in the repository.
 
 ## Data files
 
@@ -99,6 +101,15 @@ Any `.txt` file under `data/` becomes a key in the prompt using its basename. Co
 - work history.txt — same as experience; alias handled automatically
 - contact information.txt — alias to contact
 - classes taken.txt, degree information.txt — optional educational details
+
+Contact tips:
+- Provide labeled lines such as:
+  - Name: Jane Doe
+  - Email: jane@example.com
+  - Phone: (555) 123-4567
+  - Github: username or https://github.com/username
+  - LinkedIn: https://linkedin.com/in/username
+These are passed through without shortening and mapped into the YAML contact section.
 
 The system deduplicates exact duplicates and strips leading bullet glyphs (•, -, *). JSON-like strings in LLM output are parsed into lists when rendering.
 

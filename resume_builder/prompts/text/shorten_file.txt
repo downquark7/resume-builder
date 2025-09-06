@@ -5,6 +5,7 @@ Instructions:
 - Prefer concrete achievements, quantifiable impact, and matching technologies.
 - Remove duplicates, generic fluff, and unrelated items.
 - Keep the selected content as short bullets. No markdown fences.
+- Do NOT introduce new content not found in the source content. For the 'skills' category, do not add skills not present in the source.
 
 Inputs:
 Cleaned job description:
