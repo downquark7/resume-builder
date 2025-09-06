@@ -26,7 +26,12 @@ def _render(template: str, **kwargs) -> str:
 def _call_llm(prompt: str, model: Optional[str], temperature: Optional[float]) -> str:
     start = datetime.now()
     model_label = model or "default"
-    print(f"[LLM] Sending prompt to model '{model_label}' (temperature={temperature if temperature is not None else 'default'})...")
+    # Heuristic token count (since no tokenizer dependency is available): whitespace-delimited tokens
+    try:
+        input_tokens = len(prompt.split())
+    except Exception:
+        input_tokens = 0
+    print(f"[LLM] Sending prompt to model '{model_label}' (temperature={temperature if temperature is not None else 'default'}, input_tokens~{input_tokens})...")
     llm = ollama_client.get_ollama_chat(model=model, temperature=temperature)
     resp = llm.invoke(prompt)  # type: ignore[attr-defined]
     elapsed = (datetime.now() - start).total_seconds()

@@ -14,6 +14,20 @@ STRICT CONSTRAINTS (must follow exactly):
 - experience/projects/education/extras: only use content from their respective categories. You may reorder/trim but not fabricate.
 - If a section has no provided input, omit that section.
 
+Validator requirements you MUST satisfy (hard failures if violated):
+- Required fields:
+  - content.basics.name MUST be present.
+  - Every work, education, project, volunteer item that includes dates MUST include startDate.
+  - content.basics.summary MUST be present and formatted as a YAML block scalar (|) with 2–6 bullets, each line starting with "- ".
+- Degree enum: When emitting education.degree, value MUST be one of ["Middle School", "High School", "Diploma", "Associate", "Bachelor", "Master", "Doctor"]. If inputs contain variants (e.g., "B.A.", "BS", "MS"), normalize to the correct enum (e.g., "Bachelor", "Master"). Do not invent other values.
+- Dates:
+  - Use a format parseable by JavaScript Date, e.g., "2020-01" or "2020-02-03" or "Sep 1, 2020" as in the example file.
+  - endDate MUST be either a valid date string or left blank. Do NOT use the literal "Present" (leave endDate empty to denote present).
+- Descriptions and summaries:
+  - Any description/summary field under work/projects/education/volunteer must be 128 characters or less per bullet line. If a bullet exceeds 128 chars, split into multiple bullets.
+- Lists MUST be arrays of objects, not bare strings:
+  - For sections like education, work, projects, volunteer, interests, extras: each list item MUST be an object with named fields. Do NOT output plain string list items (e.g., "- Iowa State University Marching Band" is invalid; instead use objects, e.g., { name: Iowa State University Marching Band }).
+
 Target YAML schema under `content` (use only fields you have data for):
 - basics:
   - name
@@ -44,6 +58,15 @@ Mapping guidance from inputs to schema:
 - Education -> content.education mapping degree/institution/dates; put course highlights in courses.
 - Skills -> If you only have a flat list, you may emit content.skills as a flat YAML list. Do not synthesize categories/levels.
 - Extras -> map into interests or awards/certificates if clearly labeled; otherwise leave under content.interests as simple named items.
+
+Validation checklist (perform before finalizing output):
+- [ ] content.basics.name present
+- [ ] content.basics.summary present with 2–6 "- " bullets
+- [ ] No degree value outside allowed enum
+- [ ] No endDate equals "Present" (use empty endDate for current roles)
+- [ ] All date strings parseable (e.g., "2020-01" or example-like)
+- [ ] No description/summary bullet longer than 128 characters
+- [ ] No lists of bare strings where objects are required (education/work/projects/volunteer/interests/extras)
 
 Inputs:
 Cleaned job description:
