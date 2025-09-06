@@ -153,6 +153,52 @@ def _filter_skills_in_yaml(yaml_text: str, allowed_skills: set[str]) -> str:
         return yaml_text
 
 
+def _sanitize_yaml_output(text: str) -> str:
+    """Best-effort fixes to make LLM output pass yamlresume validation without inventing data.
+    - Strip markdown code fences if present.
+    - Normalize any endDate: Present -> endDate: ''
+    - If content.skills is a mapping with 'keywords', convert to a flat list under 'skills'.
+    This function operates with simple heuristics on the raw YAML text to avoid adding a YAML parser dependency.
+    Fail-open if anything goes wrong.
+    """
+    try:
+        import re
+        s = text.strip()
+        # Remove fenced code blocks ```...```
+        if s.startswith("```"):
+            # drop the first fence line and the last matching fence
+            s = re.sub(r"^```[\w-]*\n", "", s)
+            s = re.sub(r"\n```\s*$", "", s)
+        # Normalize Present -> empty endDate
+        s = re.sub(r"(?im)^(\s*endDate\s*:\s*)Present\s*$", r"\1", s)
+        # Transform skills: keywords mapping into flat list
+        # Look for a block like:\n# skills:\n#   keywords:\n#     - A\n#     - B
+        skills_block_pattern = re.compile(
+            r"(?ms)^(\s*)skills:\s*\n\1\s+keywords:\s*\n((?:\1\s+-\s+.+\n?)+)"
+        )
+        def repl(m: re.Match) -> str:
+            indent = m.group(1)
+            items_block = m.group(2)
+            # Convert each bullet to a flat list item under skills
+            lines = []
+            for line in items_block.splitlines():
+                t = line.strip()
+                if not t:
+                    continue
+                # line like '- Python'
+                val = re.sub(r"^-[\s\t]+", "", t)
+                lines.append(f"{indent}  - {val}")
+            return f"{indent}skills:\n" + "\n".join(lines) + "\n"
+        s = skills_block_pattern.sub(repl, s)
+        # Remove any stray grouped skills entries like '- category: ...' that may follow a flattened skills block
+        # This crudely drops lines starting with '- category:' and their immediate 'keywords:' sub-block, within the skills indentation context.
+        s = re.sub(r"(?ms)^(\s*)-\s*category:.*?(?=\n\1\S|\n\n|\Z)", "", s)
+        s = re.sub(r"c\+\+", r"c\\+\\+", s)
+        return s
+    except Exception:
+        return text
+
+
 def build_yaml_resume(cleaned_job: str, shortened_map: Dict[str, str], cfg: RewriteConfig) -> str:
     prompt_t = load_prompt("build_yaml_resume")
     # Compose a readable shortened_map text block
@@ -162,6 +208,9 @@ def build_yaml_resume(cleaned_job: str, shortened_map: Dict[str, str], cfg: Rewr
     combined = "\n".join(parts)
     prompt = _render(prompt_t, cleaned_job=cleaned_job, shortened_map=combined)
     out = _call_llm(prompt, cfg.model, cfg.temperature)
+
+    # Post-process to improve YAML compliance before skills filtering
+    out = _sanitize_yaml_output(out)
 
     # Build allowed skills set from shortened_map's 'skills' category (each line is a bullet)
     skills_source = None

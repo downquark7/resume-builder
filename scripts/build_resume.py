@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from resume_builder.chains.rewrite_pipeline import run_rewrite, RewriteConfig
+from resume_builder.chains.pipeline import run_rewrite, RewriteConfig
 from resume_builder.config import settings
 
 
