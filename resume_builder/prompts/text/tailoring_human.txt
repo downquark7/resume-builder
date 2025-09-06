@@ -1,0 +1,10 @@
+Job Description:
+{job}
+
+Available Sources (each key maps to text):
+{sources}
+
+Instructions:
+- Only include verifiable info from sources.
+- Synthesize and rephrase; do not copy verbatim unless necessary.
+- Output valid JSON only.

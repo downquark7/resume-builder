@@ -1,0 +1,6 @@
+File name: {name}
+
+Content:
+{content}
+
+Provide bullet-point suggestions and examples of improved phrasing.
