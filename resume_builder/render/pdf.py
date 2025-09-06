@@ -1,7 +1,14 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Any
+import os
+import json
+import re
 from jinja2 import Template
+try:
+    from ..llm import ollama_client  # optional
+except Exception:
+    ollama_client = None  # type: ignore
 
 try:
     from weasyprint import HTML  # type: ignore
@@ -82,13 +89,108 @@ RESUME_HTML_TEMPLATE = Template(
 
 
 def render_resume_pdf(data: Dict[str, Any], out_path: str | Path) -> Path:
-    """Render a simple resume PDF from structured data.
+    """Render a simple resume PDF/HTML from structured data.
 
-    Expected data keys: summary (str), skills (list[str]), experience (list[str]),
-    projects (list[str]), education (list[str]), extras (list[str]), name (optional str).
+    Expected data keys: summary (str), skills (list[str]|str), experience (list[str]|str),
+    projects (list[str]|str), education (list[str]|str), extras (list[str]|str), name (optional str).
+
+    This function normalizes and de-duplicates list fields to avoid repeated items and cleans up common LLM artifacts.
     """
+    bullet_re = re.compile(r"^\s*[\u2022•\-*]+\s*")
+
+    def _format_dict(d: dict) -> str:
+        # Try to compose a readable line from common fields
+        title_keys = ("title", "role", "position", "name")
+        org_keys = ("company", "organization", "employer")
+        desc_keys = ("description", "desc", "details", "text")
+        edu_keys = ("degree", "major", "university", "college")
+
+        title = next((str(d[k]).strip() for k in title_keys if k in d and str(d[k]).strip()), "")
+        org = next((str(d[k]).strip() for k in org_keys if k in d and str(d[k]).strip()), "")
+        desc = next((str(d[k]).strip() for k in desc_keys if k in d and str(d[k]).strip()), "")
+
+        if title or org or desc:
+            parts = []
+            head = title or org
+            if title and org:
+                head = f"{title}, {org}"
+            if head:
+                parts.append(head)
+            if desc:
+                parts.append(desc)
+            return " — ".join(parts)
+
+        # Education-specific
+        edu_vals = [str(d[k]).strip() for k in edu_keys if k in d and str(d[k]).strip()]
+        if edu_vals:
+            return " — ".join(edu_vals)
+
+        # Fallback: key: value; ... but avoid braces
+        kv_parts = []
+        for k, v in d.items():
+            s = str(v).strip()
+            if s:
+                kv_parts.append(f"{k}: {s}")
+        return "; ".join(kv_parts) if kv_parts else ""
+
+    def _format_item(x: Any) -> list[str]:
+        # Return a list of formatted strings (may flatten nested lists)
+        if x is None:
+            return []
+        if isinstance(x, str):
+            s = x.strip()
+            if not s:
+                return []
+            s = bullet_re.sub("", s)  # strip leading bullet glyphs
+            return [s] if s else []
+        if isinstance(x, dict):
+            s = bullet_re.sub("", _format_dict(x))
+            return [s] if s else []
+        if isinstance(x, list):
+            out: list[str] = []
+            for item in x:
+                out.extend(_format_item(item))
+            return out
+        # other types
+        s = bullet_re.sub("", str(x).strip())
+        return [s] if s else []
+
+    def _to_list(v: Any) -> list[str]:
+        items = _format_item(v)
+        # filter standalone bullets or empties
+        items = [i for i in items if i and i not in {"•", "-", "*"}]
+        return items
+
+    def _dedupe_preserve_order(items: list[str]) -> list[str]:
+        seen = set()
+        result: list[str] = []
+        for x in items:
+            if x not in seen:
+                seen.add(x)
+                result.append(x)
+        return result
+
+    def _base_title(s: str) -> str:
+        # Use part before an em dash or colon as title, lowercased
+        s0 = s.split(" — ", 1)[0]
+        s0 = s0.split(": ", 1)[0]
+        return s0.strip().lower()
+
+    normalized = dict(data)
+    for key in ("skills", "experience", "projects", "education", "extras"):
+        normalized[key] = _dedupe_preserve_order(_to_list(data.get(key)))
+
+    # Cross-dedupe: remove projects that duplicate experience by title
+    exp_titles = {_base_title(x) for x in normalized.get("experience", []) if x}
+    normalized["projects"] = [p for p in normalized.get("projects", []) if _base_title(p) not in exp_titles]
+
+    # Ensure summary is a string
+    summary = normalized.get("summary", "")
+    if not isinstance(summary, str):
+        normalized["summary"] = str(summary)
+
     out = Path(out_path)
-    html_str = RESUME_HTML_TEMPLATE.render(**data)
+    html_str = RESUME_HTML_TEMPLATE.render(**normalized)
 
     if WEASY_AVAILABLE and out.suffix.lower() == ".pdf":
         HTML(string=html_str).write_pdf(str(out))

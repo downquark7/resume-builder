@@ -1,3 +1,5 @@
 # Ignore data directory contents
 /data/
 /scripts/.live_runs/
+*.pdf
+*.json
