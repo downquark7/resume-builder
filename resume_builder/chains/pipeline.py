@@ -193,7 +193,7 @@ def _sanitize_yaml_output(text: str) -> str:
         # Remove any stray grouped skills entries like '- category: ...' that may follow a flattened skills block
         # This crudely drops lines starting with '- category:' and their immediate 'keywords:' sub-block, within the skills indentation context.
         s = re.sub(r"(?ms)^(\s*)-\s*category:.*?(?=\n\1\S|\n\n|\Z)", "", s)
-        s = re.sub(r"C\+\+", r"C\\+\\+", s)
+        # s = re.sub(r"C\+\+", r"C\\+\\+", s)
         return s
     except Exception:
         return text
