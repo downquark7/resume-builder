@@ -96,6 +96,8 @@ def main():
         "projects": projects,
         "education": education,
         "extras": extras,
+        # Enable LLM-driven final layout: ordering, counts, and project slimming
+        "llm_render": True,
     }
 
     out_path = render_resume_pdf(data, args.out)

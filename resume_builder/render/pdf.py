@@ -89,12 +89,17 @@ RESUME_HTML_TEMPLATE = Template(
 
 
 def render_resume_pdf(data: Dict[str, Any], out_path: str | Path) -> Path:
-    """Render a simple resume PDF/HTML from structured data.
+    """Render a resume PDF/HTML from structured data.
 
     Expected data keys: summary (str), skills (list[str]|str), experience (list[str]|str),
     projects (list[str]|str), education (list[str]|str), extras (list[str]|str), name (optional str).
 
-    This function normalizes and de-duplicates list fields to avoid repeated items and cleans up common LLM artifacts.
+    Behavior:
+    - By default uses a simple Jinja2 template (stable, deterministic) after normalizing inputs.
+    - If environment variable RENDER_WITH_LLM=true or data["llm_render"] is truthy AND an LLM client is available,
+      delegates the final HTML composition to the LLM so it can decide ordering and how many items to include
+      (especially slimming projects). If the LLM call fails, falls back to the template.
+    - Regardless of the path, list fields are normalized and projects are deduped against experience by title.
     """
     bullet_re = re.compile(r"^\s*[\u2022•\-*]+\s*")
 
@@ -190,7 +195,71 @@ def render_resume_pdf(data: Dict[str, Any], out_path: str | Path) -> Path:
         normalized["summary"] = str(summary)
 
     out = Path(out_path)
-    html_str = RESUME_HTML_TEMPLATE.render(**normalized)
+
+    # Decide whether to ask an LLM to compose the final HTML
+    use_llm = False
+    try:
+        use_llm = bool(str(os.getenv("RENDER_WITH_LLM", "")).lower() in {"1", "true", "yes"} or data.get("llm_render")) and ollama_client is not None
+    except Exception:
+        use_llm = False
+
+    html_str: str | None = None
+
+    if use_llm:
+        try:
+            # Compose minimal, strict instruction to produce concise, well-ordered HTML.
+            # Provide normalized data so the model can choose what to include and how many items.
+            payload = {
+                "name": normalized.get("name", ""),
+                "summary": normalized.get("summary", ""),
+                "skills": normalized.get("skills", []),
+                "experience": normalized.get("experience", []),
+                "projects": normalized.get("projects", []),
+                "education": normalized.get("education", []),
+                "extras": normalized.get("extras", []),
+            }
+            instruction = (
+                "You are an expert resume editor. Create the final HTML for a 1-page resume using the provided structured data.\n"
+                "Decide: which sections to include, how many items from each (keep it concise), the order of sections, and phrasing.\n"
+                "Specifically slim down projects to only the most impactful items. Remove duplicates.\n"
+                "Output ONLY valid, self-contained HTML (no Markdown, no code fences). Include minimal inline CSS for readability.\n"
+                "Use <h1> for the candidate name, <h2> for section headers, and <ul><li> for lists."
+            )
+            data_json = json.dumps(payload, ensure_ascii=False, indent=2)
+            prompt_text = (
+                f"SYSTEM:\n{instruction}\n\n"
+                f"DATA (JSON):\n{data_json}\n\n"
+                "Constraints:\n"
+                "- Decide the ordering of the entire output.\n"
+                "- Decide how many items per section to prevent excessive length.\n"
+                "- Prefer merging redundant items and removing near-duplicates.\n"
+                "- If a section is empty after pruning, omit it.\n"
+                "- Keep language tight and impact-focused.\n"
+                "Return only HTML."
+            )
+
+            llm = ollama_client.get_ollama_chat()
+            raw = llm.invoke(prompt_text)
+            text = raw.content if hasattr(raw, "content") else str(raw)
+            text = text.strip()
+            # Strip common code fences if present
+            if text.startswith("```"):
+                text = re.sub(r"^```[a-zA-Z]*\n?|\n?```$", "", text, flags=re.MULTILINE).strip()
+            # Ensure we have an <html> root
+            if "<html" not in text.lower():
+                # Wrap as minimal HTML
+                body = text
+                text = (
+                    "<html><head><meta charset=\"utf-8\" />"
+                    "<style>body{font-family:sans-serif;margin:32px;} h1,h2{margin-bottom:6px;} .section{margin-top:16px;} ul{margin:6px 0 0 18px;}</style>"
+                    "</head><body>" + body + "</body></html>"
+                )
+            html_str = text
+        except Exception:
+            html_str = None
+
+    if not html_str:
+        html_str = RESUME_HTML_TEMPLATE.render(**normalized)
 
     if WEASY_AVAILABLE and out.suffix.lower() == ".pdf":
         HTML(string=html_str).write_pdf(str(out))
