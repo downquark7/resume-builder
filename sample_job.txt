@@ -1,0 +1,48 @@
+Senior Python Developer - Machine Learning Focus
+
+Company: AI Innovations Inc.
+Location: San Francisco, CA (Remote OK)
+Type: Full-time
+
+Job Description:
+We are seeking a Senior Python Developer with strong machine learning experience to join our growing AI team. The ideal candidate will have 5+ years of Python development experience and hands-on experience with ML frameworks.
+
+Key Responsibilities:
+- Develop and maintain Python-based machine learning pipelines
+- Build scalable data processing systems using Python and cloud technologies
+- Collaborate with data scientists to implement ML models in production
+- Design and implement RESTful APIs for ML services
+- Optimize model performance and deployment processes
+- Mentor junior developers and conduct code reviews
+- Work with cross-functional teams to deliver AI-powered features
+
+Required Qualifications:
+- 5+ years of Python development experience
+- Strong experience with machine learning frameworks (TensorFlow, PyTorch, scikit-learn)
+- Experience with cloud platforms (AWS, GCP, or Azure)
+- Knowledge of containerization (Docker, Kubernetes)
+- Experience with databases (PostgreSQL, MongoDB)
+- Strong understanding of software engineering best practices
+- Excellent communication and collaboration skills
+
+Preferred Qualifications:
+- Experience with MLOps and model deployment
+- Knowledge of data engineering tools (Apache Airflow, Spark)
+- Experience with microservices architecture
+- Previous experience in AI/ML startups
+- Contributions to open source projects
+
+Technologies We Use:
+- Python, Django, Flask
+- TensorFlow, PyTorch, scikit-learn
+- AWS, Docker, Kubernetes
+- PostgreSQL, Redis, MongoDB
+- Git, Jenkins, Terraform
+
+What We Offer:
+- Competitive salary and equity
+- Comprehensive health benefits
+- Flexible work arrangements
+- Professional development opportunities
+- Cutting-edge technology stack
+- Collaborative and innovative culture

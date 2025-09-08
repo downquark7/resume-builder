@@ -1,0 +1,29 @@
+Awards and Recognition:
+- Employee of the Year, TechCorp (2023)
+- Best Technical Presentation, TechConf 2022
+- Dean's List, Stanford University (2018-2020)
+- Hackathon Winner, CodeFest 2019
+
+Publications:
+- "Scalable Microservices Architecture Patterns" - Tech Journal (2023)
+- "Machine Learning in Production: Lessons Learned" - Conference Paper (2022)
+
+Volunteer Work:
+- Code for America - Volunteer Developer (2021-Present)
+  * Built web applications for local government transparency
+  * Mentored new volunteers and conducted workshops
+
+- Tech Education Non-profit - Board Member (2020-2022)
+  * Organized coding bootcamps for underrepresented communities
+  * Developed curriculum for web development courses
+
+Leadership Experience:
+- Technical Lead, TechCorp (2022-Present)
+  * Led team of 5 engineers on critical projects
+  * Established coding standards and best practices
+  * Conducted technical interviews and hiring decisions
+
+- Student Government, Stanford University (2018-2020)
+  * Vice President of Computer Science Society
+  * Organized tech talks and networking events
+  * Represented student interests to faculty

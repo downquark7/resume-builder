@@ -1,0 +1,66 @@
+Name: John Smith
+Email: john.smith@email.com
+Phone: (555) 123-4567
+Location: San Francisco, CA
+LinkedIn: https://linkedin.com/in/johnsmith
+GitHub: https://github.com/johnsmith
+
+Professional Summary:
+Experienced software engineer with 5+ years of experience in full-stack development, specializing in Python, JavaScript, and cloud technologies. Passionate about building scalable applications and leading technical teams. Strong background in machine learning and data analysis.
+
+Education:
+- Master of Science in Computer Science, Stanford University (2018-2020)
+- Bachelor of Science in Software Engineering, UC Berkeley (2014-2018)
+
+Work Experience:
+- Senior Software Engineer at TechCorp (2021-Present)
+  * Led development of microservices architecture serving 1M+ users
+  * Implemented CI/CD pipelines reducing deployment time by 60%
+  * Mentored 3 junior developers and conducted code reviews
+  * Technologies: Python, Django, React, AWS, Docker, Kubernetes
+
+- Software Engineer at StartupXYZ (2019-2021)
+  * Built RESTful APIs and frontend applications
+  * Collaborated with product team to define technical requirements
+  * Implemented automated testing increasing code coverage to 90%
+  * Technologies: Python, Flask, JavaScript, PostgreSQL, Redis
+
+- Software Developer Intern at BigTech (Summer 2018)
+  * Developed internal tools for data analysis
+  * Participated in agile development process
+  * Technologies: Java, Spring Boot, MySQL
+
+Skills:
+- Programming Languages: Python, JavaScript, Java, Go, SQL
+- Frameworks: Django, Flask, React, Node.js, Spring Boot
+- Cloud & DevOps: AWS, Docker, Kubernetes, Jenkins, Terraform
+- Databases: PostgreSQL, MongoDB, Redis, MySQL
+- Machine Learning: TensorFlow, PyTorch, scikit-learn, pandas
+- Tools: Git, Linux, VS Code, Jupyter Notebooks
+
+Projects:
+- Personal Finance Tracker (2023)
+  * Full-stack web application for budget management
+  * Features: expense categorization, budget alerts, data visualization
+  * Tech stack: Django, React, PostgreSQL, Chart.js
+
+- ML Model for Stock Prediction (2022)
+  * Trained LSTM model to predict stock prices
+  * Achieved 15% improvement over baseline models
+  * Tech stack: Python, TensorFlow, pandas, scikit-learn
+
+Certifications:
+- AWS Certified Solutions Architect (2022)
+- Google Cloud Professional Developer (2021)
+- Certified Kubernetes Administrator (2023)
+
+Languages:
+- English (Native)
+- Spanish (Conversational)
+- French (Basic)
+
+Interests:
+- Open source contributions
+- Machine learning research
+- Rock climbing
+- Photography
