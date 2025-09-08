@@ -1,0 +1,18 @@
+# Core dependencies for GPT-OSS model connection
+requests>=2.31.0
+openai>=1.0.0
+httpx>=0.24.0
+pydantic>=2.0.0
+
+# Optional: For better JSON handling and async support
+aiohttp>=3.8.0
+websockets>=11.0.0
+
+# Optional: For environment variable management
+python-dotenv>=1.0.0
+
+# Optional: For logging and debugging
+loguru>=0.7.0
+
+# Optional: For data validation and serialization
+marshmallow>=3.20.0
