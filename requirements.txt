@@ -1,5 +1,0 @@
-langchain-ollama
-requests
-beautifulsoup4
-pydantic
-python-dotenv
