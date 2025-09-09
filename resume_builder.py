@@ -206,37 +206,36 @@ class ResumeBuilder:
             str: Formatted prompt for the LLM
         """
         template_str = json.dumps(template, indent=2)
-        
-        prompt = f"""You are a professional resume writer. Create a tailored resume based on the following information.
 
-PERSONAL DATA:
-{personal_data}
+        prompt = f"""
+        You are a professional resume writer. Your task is to generate a tailored resume in **strict JSON format** based on the provided information.
 
-{job_description}
+        === INPUT DATA ===
+        PERSONAL DATA:
+        {personal_data}
 
-TEMPLATE STRUCTURE (follow this exact JSON format):
-{template_str}
+        JOB DESCRIPTION:
+        {job_description}
 
-INSTRUCTIONS:
-{f"1. Create a CONCISE resume that matches the template structure exactly" if concise else "1. Create a DETAILED resume that matches the template structure exactly"}
-2. Use the personal data provided to fill in the resume sections
-3. If job description/keywords are provided, tailor the resume to highlight relevant skills and experience
-{f"4. Keep it brief and focused - limit to 3-4 most relevant work experiences, 5-6 key skills with 3-4 keywords each, and 2-3 most relevant projects" if concise else "4. Include comprehensive details - 4-6 work experiences, 6-8 skills with 4-6 keywords each, and 3-4 projects"}
-5. Ensure all dates are in the correct format (e.g., "Sep 1, 2016", "Jul 1, 2020")
-6. Do not make up dates, remove unknown dates from the output, and do not make up any other data - use only the personal data provided
-7. Make the content professional and compelling{f" but concise" if concise else ""}
-8. Use bullet points for summaries and descriptions{f" (limit to 2-3 bullets per item)" if concise else " (3-4 bullets per item)"}
-9. Focus on achievements and impact, not just responsibilities
-10. Include relevant keywords from the job description if provided
-11. IMPORTANT: Only include fields that have valid data - omit any fields that would require making up or fabricating information
-12. If a section has no data or only non relevant data, either omit it entirely or use an empty array/null as appropriate
-13. Do not generate placeholder data, fake information, or make up details
-14. Return ONLY valid JSON that matches the template structure
-15. All keywords and descriptions need to be grounded in truth from the input data - use only keywords that are present in the input data
-16. Do not add dates to the projects section - use only the dates provided
+        TEMPLATE STRUCTURE (follow exactly):
+        {template_str}
 
+        === INSTRUCTIONS ===
+        1. Produce a {"concise" if concise else "detailed"} resume that strictly matches the template structure.
+        2. Use only the personal data provided — do not invent or fabricate any information.
+        3. If a job description is included, tailor the resume to highlight relevant skills, experiences, and keywords.
+        4. {"Limit to 3-4 work experiences, 5-6 skills (3-4 keywords each), and 2-3 projects." if concise else "Include 4-6 work experiences, 6-8 skills (4-6 keywords each), and 3-4 projects."}
+        5. Dates must be formatted as `"Sep 1, 2016"` or `"Jul 1, 2020"`. If dates are missing, omit them entirely (do not make them up).
+        6. In the **work section**, include the job **location** by appending it to the company name in the `name` field (e.g., `"Acme Corp — New York, NY"`).
+        7. Omit or leave null/empty any section that lacks valid data.
+        8. Summaries and descriptions must be professional and achievement-focused, not just task lists. Use bullet points ({"2-3 per item" if concise else "3-4 per item"}).
+        9. Include keywords from the job description if they align with provided data.
+        10. Do not generate placeholder text, fake entries, or fabricated details.
+        11. Return only valid JSON that conforms exactly to the template structure.
 
-Generate the resume JSON:"""
+        === OUTPUT ===
+        Resume JSON:
+        """
 
         return prompt
     
@@ -366,8 +365,8 @@ Generate the resume JSON:"""
                 del basics['email']
             
             # Remove URL if longer than 35 characters
-            if 'url' in basics and len(str(basics['url'])) > 35:
-                del basics['url']
+            # if 'url' in basics and len(str(basics['url'])) > 35:
+            #     del basics['url']
         
         # Clean profiles
         if 'profiles' in content and isinstance(content['profiles'], list):
@@ -559,8 +558,8 @@ Generate the resume JSON:"""
         cleaned_profile = profile.copy()
         
         # Remove URL if longer than 35 characters
-        if 'url' in cleaned_profile and len(str(cleaned_profile['url'])) > 35:
-            del cleaned_profile['url']
+        # if 'url' in cleaned_profile and len(str(cleaned_profile['url'])) > 35:
+        #     del cleaned_profile['url']
         
         return cleaned_profile
     
@@ -582,8 +581,8 @@ Generate the resume JSON:"""
             cleaned_job['keywords'] = cleaned_keywords
         
         # Remove URL if longer than 35 characters
-        if 'url' in cleaned_job and len(str(cleaned_job['url'])) > 35:
-            del cleaned_job['url']
+        # if 'url' in cleaned_job and len(str(cleaned_job['url'])) > 35:
+        #     del cleaned_job['url']
         
         return cleaned_job
     
@@ -605,8 +604,8 @@ Generate the resume JSON:"""
             cleaned_project['keywords'] = cleaned_keywords
         
         # Remove URL if longer than 35 characters
-        if 'url' in cleaned_project and len(str(cleaned_project['url'])) > 35:
-            del cleaned_project['url']
+        # if 'url' in cleaned_project and len(str(cleaned_project['url'])) > 35:
+        #     del cleaned_project['url']
         
         return cleaned_project
     
@@ -634,8 +633,8 @@ Generate the resume JSON:"""
         cleaned_pub = pub.copy()
         
         # Remove URL if longer than 35 characters
-        if 'url' in cleaned_pub and len(str(cleaned_pub['url'])) > 35:
-            del cleaned_pub['url']
+        # if 'url' in cleaned_pub and len(str(cleaned_pub['url'])) > 50:
+        #     del cleaned_pub['url']
         
         return cleaned_pub
     
@@ -644,8 +643,8 @@ Generate the resume JSON:"""
         cleaned_cert = cert.copy()
         
         # Remove URL if longer than 35 characters
-        if 'url' in cleaned_cert and len(str(cleaned_cert['url'])) > 35:
-            del cleaned_cert['url']
+        # if 'url' in cleaned_cert and len(str(cleaned_cert['url'])) > 35:
+        #     del cleaned_cert['url']
         
         return cleaned_cert
     
@@ -654,8 +653,8 @@ Generate the resume JSON:"""
         cleaned_vol = vol.copy()
         
         # Remove URL if longer than 35 characters
-        if 'url' in cleaned_vol and len(str(cleaned_vol['url'])) > 35:
-            del cleaned_vol['url']
+        # if 'url' in cleaned_vol and len(str(cleaned_vol['url'])) > 35:
+        #     del cleaned_vol['url']
         
         return cleaned_vol
     

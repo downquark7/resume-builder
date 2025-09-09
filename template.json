@@ -161,30 +161,9 @@
     ],
     "interests": [
       {
-        "name": "Sports",
+        "name": "",
         "keywords": [
-          "Soccer",
-          "Swimming",
-          "Bicycling",
-          "Hiking"
         ]
-      },
-      {
-        "name": "Music",
-        "keywords": [
-          "Piano",
-          "Guitar"
-        ]
-      }
-    ],
-    "volunteer": [
-      {
-        "organization": "USC Computer Science and Engineering Society",
-        "url": "https://www.usccsesociety.org/",
-        "position": "Tech Mentor",
-        "startDate": "Sep 2015",
-        "endDate": "Jul 2023",
-        "summary": "- Volunteered as a Tech Mentor at USC Computer Science and Engineering Society\n- Provided guidance and assistance to fellow students in their technical projects and coursework\n- Assisted in organizing workshops, coding competitions, and networking events for the society members\n- Contributed to fostering a collaborative and supportive environment within the student community\n"
       }
     ]
   },
