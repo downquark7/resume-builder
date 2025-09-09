@@ -232,6 +232,8 @@ INSTRUCTIONS:
 12. If a section has no data or only non relevant data, either omit it entirely or use an empty array/null as appropriate
 13. Do not generate placeholder data, fake information, or make up details
 14. Return ONLY valid JSON that matches the template structure
+15. All keywords and descriptions need to be grounded in truth from the input data - use only keywords that are present in the input data
+16. Do not add dates to the projects section - use only the dates provided
 
 
 Generate the resume JSON:"""
