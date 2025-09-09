@@ -77,21 +77,6 @@
         ]
       }
     ],
-    "languages": [
-      {
-        "language": "English",
-        "fluency": "Native or Bilingual Proficiency",
-        "keywords": [
-          "TOEFL 110",
-          "IELTS 7.5"
-        ]
-      },
-      {
-        "language": "Chinese",
-        "fluency": "Elementary Proficiency",
-        "keywords": []
-      }
-    ],
     "skills": [
       {
         "name": "Web Development",

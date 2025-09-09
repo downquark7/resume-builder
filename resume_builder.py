@@ -223,14 +223,16 @@ INSTRUCTIONS:
 3. If job description/keywords are provided, tailor the resume to highlight relevant skills and experience
 {f"4. Keep it brief and focused - limit to 3-4 most relevant work experiences, 5-6 key skills with 3-4 keywords each, and 2-3 most relevant projects" if concise else "4. Include comprehensive details - 4-6 work experiences, 6-8 skills with 4-6 keywords each, and 3-4 projects"}
 5. Ensure all dates are in the correct format (e.g., "Sep 1, 2016", "Jul 1, 2020")
-6. Make the content professional and compelling{f" but concise" if concise else ""}
-7. Use bullet points for summaries and descriptions{f" (limit to 2-3 bullets per item)" if concise else " (3-4 bullets per item)"}
-8. Focus on achievements and impact, not just responsibilities
-9. Include relevant keywords from the job description if provided
-10. IMPORTANT: Only include fields that have valid data - omit any fields that would require making up or fabricating information
-11. If a section has no data, either omit it entirely or use an empty array/null as appropriate
-12. Do not generate placeholder data, fake information, or make up details
-13. Return ONLY valid JSON that matches the template structure
+6. Do not make up dates, remove unknown dates from the output, and do not make up any other data - use only the personal data provided
+7. Make the content professional and compelling{f" but concise" if concise else ""}
+8. Use bullet points for summaries and descriptions{f" (limit to 2-3 bullets per item)" if concise else " (3-4 bullets per item)"}
+9. Focus on achievements and impact, not just responsibilities
+10. Include relevant keywords from the job description if provided
+11. IMPORTANT: Only include fields that have valid data - omit any fields that would require making up or fabricating information
+12. If a section has no data or only non relevant data, either omit it entirely or use an empty array/null as appropriate
+13. Do not generate placeholder data, fake information, or make up details
+14. Return ONLY valid JSON that matches the template structure
+
 
 Generate the resume JSON:"""
 
@@ -902,10 +904,7 @@ CORRECTED YAML:"""
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "num_ctx": 8192,
-                    "temperature": 0.1,  # Low temperature for consistent formatting
-                    "top_p": 0.9,
-                    "top_k": 40
+                    "num_ctx": 8192
                 }
             }
             
