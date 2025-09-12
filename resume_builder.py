@@ -302,7 +302,10 @@ class ResumeBuilder:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "num_ctx": 8192
+                    "num_ctx": 16384,
+                    "top_k": 0,
+                    "top_p": 1.0,
+                    "temperature": 1.0
                 }
             }
             
