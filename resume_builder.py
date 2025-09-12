@@ -279,8 +279,9 @@ class ResumeBuilder:
         7. Omit or leave null/empty any section that lacks valid data.
         8. Summaries and descriptions must be professional and achievement-focused, not just task lists. Use bullet points ({"2-3 per item" if concise else "3-4 per item"}).
         9. Include keywords from the job description if they align with provided data.
-        10. Do not generate placeholder text, fake entries, or fabricated details.
-        11. Return only valid JSON that conforms exactly to the template structure.
+        10. If a skill is not listed in the personal data, put the skill level as Beginner or maybe Intermediate.
+        11. Do not generate placeholder text, fake entries, or fabricated details.
+        12. Return only valid JSON that conforms exactly to the template structure.
 
         === OUTPUT ===
         Resume JSON:
