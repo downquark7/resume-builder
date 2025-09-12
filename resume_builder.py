@@ -1085,10 +1085,10 @@ Examples:
                        help="Build PDF after creating YAML (default: True)")
     parser.add_argument("--no-pdf", action="store_true",
                        help="Skip PDF generation (overrides --build-pdf)")
-    parser.add_argument("--concise", action="store_true", default=True,
-                       help="Generate a concise resume (default: True)")
-    parser.add_argument("--detailed", action="store_true",
-                       help="Generate a detailed resume (overrides --concise)")
+    parser.add_argument("--concise", action="store_true",
+                       help="Generate a concise resume")
+    parser.add_argument("--detailed", action="store_true", default=True,
+                       help="Generate a detailed resume")
     parser.add_argument("--no-ai-fix", action="store_true",
                        help="Disable AI-powered YAML fixing when PDF build fails")
     parser.add_argument("--no-warning-fix", action="store_true",
