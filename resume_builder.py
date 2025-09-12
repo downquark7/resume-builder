@@ -83,6 +83,8 @@ import yaml
 from pathlib import Path
 from typing import Optional, Dict, Any
 import time
+from bs4 import BeautifulSoup
+import re
 
 
 class ResumeBuilder:
@@ -174,7 +176,54 @@ class ResumeBuilder:
             try:
                 response = requests.get(job_url, timeout=10)
                 response.raise_for_status()
-                return f"JOB DESCRIPTION:\n{response.text}\n"
+                
+                # Parse HTML content to extract job description
+                soup = BeautifulSoup(response.text, 'html.parser')
+                job_description = ""
+                
+                # Try to extract from meta description first
+                meta_desc = soup.find('meta', attrs={'name': 'description', 'property': 'og:description'})
+                if not meta_desc:
+                    meta_desc = soup.find('meta', attrs={'property': 'og:description'})
+                if not meta_desc:
+                    meta_desc = soup.find('meta', attrs={'name': 'description'})
+                
+                if meta_desc and meta_desc.get('content'):
+                    job_description = meta_desc.get('content')
+                
+                # Try to extract from JSON-LD structured data if meta description not found
+                if not job_description:
+                    json_scripts = soup.find_all('script', type='application/ld+json')
+                    for script in json_scripts:
+                        try:
+                            json_data = json.loads(script.string)
+                            if isinstance(json_data, dict) and json_data.get('@type') == 'JobPosting':
+                                job_description = json_data.get('description', '')
+                                break
+                        except (json.JSONDecodeError, AttributeError):
+                            continue
+                
+                # If still no description, try to extract from common job posting elements
+                if not job_description:
+                    # Look for common job description containers
+                    job_containers = soup.find_all(['div', 'section'], 
+                                                 class_=re.compile(r'job.*description|description.*job|posting.*content|job.*content', re.I))
+                    for container in job_containers:
+                        text = container.get_text(strip=True)
+                        if len(text) > 100:  # Only consider substantial text
+                            job_description = text
+                            break
+                
+                # Clean up the description
+                if job_description:
+                    # Remove HTML entities and extra whitespace
+                    job_description = re.sub(r'&#\d+;', '', job_description)
+                    job_description = re.sub(r'\s+', ' ', job_description).strip()
+                    return f"JOB DESCRIPTION:\n{job_description}\n"
+                else:
+                    print("Warning: Could not extract job description from HTML, using raw content")
+                    return f"JOB DESCRIPTION:\n{response.text}\n"
+                    
             except requests.RequestException as e:
                 print(f"Error fetching job URL: {e}")
                 return ""
@@ -208,30 +257,42 @@ class ResumeBuilder:
         template_str = json.dumps(template, indent=2)
 
         prompt = f"""
-        You are a professional resume writer. Your task is to generate a tailored resume in **strict JSON format** based on the provided information.
+        You are a professional resume writer. Your task is to generate a tailored resume in **strict JSON format** based primarily on the provided personal data, with the job description used only for subtle alignment.
 
         === INPUT DATA ===
         PERSONAL DATA:
         {personal_data}
 
-        JOB DESCRIPTION:
+        JOB DESCRIPTION (for alignment, not as a primary source):
         {job_description}
 
         TEMPLATE STRUCTURE (follow exactly):
         {template_str}
 
         === INSTRUCTIONS ===
-        1. Produce a {"concise" if concise else "detailed"} resume that strictly matches the template structure.
-        2. Use only the personal data provided — do not invent or fabricate any information.
-        3. If a job description is included, tailor the resume to highlight relevant skills, experiences, and keywords.
-        4. {"Limit to 3-4 work experiences, 5-6 skills (3-4 keywords each), and 2-3 projects." if concise else "Include 4-6 work experiences, 6-8 skills (4-6 keywords each), and 3-4 projects."}
-        5. Dates must be formatted as `"Sep 1, 2016"` or `"Jul 1, 2020"`. If dates are missing, omit them entirely (do not make them up).
-        6. In the **work section**, include the job **location** by appending it to the company name in the `name` field (e.g., `"Acme Corp — New York, NY"`).
-        7. Omit or leave null/empty any section that lacks valid data.
-        8. Summaries and descriptions must be professional and achievement-focused, not just task lists. Use bullet points ({"2-3 per item" if concise else "3-4 per item"}).
-        9. Include keywords from the job description if they align with provided data.
-        10. Do not generate placeholder text, fake entries, or fabricated details.
-        11. Return only valid JSON that conforms exactly to the template structure.
+        CRITICAL RULES (highest priority):
+        1. The **personal data is the single source of truth**. Everything in the resume must come directly from it.
+        2. Summaries and descriptions:
+           - MUST reflect only the provided personal data (no new responsibilities, roles, or achievements).  
+           - You MAY introduce reasonable, professional-sounding numbers or metrics (e.g., “improved efficiency by 20%”) **only if they quantify or emphasize something already stated**.  
+           - You MAY rephrase or lightly tailor to echo the job description **but only when it reinforces or aligns with the existing personal data**.  
+           - Do NOT insert job description details that lack grounding in the personal data.  
+        3. Skills and keywords:
+           - Use ONLY the entries explicitly listed in the provided `skills` data.  
+           - Do NOT invent, infer, or borrow skills/keywords from the job description unless they already exist in the `skills` list.  
+        4. If any detail is missing (dates, locations, projects, etc.), omit the field or set it to null/empty. Do NOT fabricate.
+        5. If not enough information exists to produce the requested number of bullets/entries, output only what is available.
+
+        Formatting & Content Rules:
+        6. Produce a truthful, professional looking resume that strictly matches the template structure.
+        7. Tailor the resume by selectively rephrasing and emphasizing personal data in ways that resonate with the job description—but never invent facts.
+        8. Dates must be formatted as `"Sep 1, 2016"` or `"Jul 1, 2020"`. If dates are missing, omit them entirely.
+        9. In the **work section**, include the job **location** by appending it to the company name in the `name` field (e.g., `"Acme Corp — New York, NY"`).
+        10. Omit or leave null/empty any section that lacks valid data (e.g., `"education": []` if no education is provided).
+        11. Bullet points must be professional, concise, and accurate. 
+            - Use 2-3 per item
+            - They may emphasize scope or impact using numbers ONLY if consistent with the original data.  
+        12. Return only valid JSON that conforms exactly to the template structure.
 
         === OUTPUT ===
         Resume JSON:
