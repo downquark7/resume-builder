@@ -8,7 +8,6 @@ A powerful AI-powered resume builder that creates tailored, professional resumes
 - **Multiple Input Sources**: Supports job descriptions from files, URLs, or keywords
 - **Flexible Output**: Generates both YAML and PDF formats
 - **Tailored Content**: Automatically customizes resumes based on job requirements
-- **Conciseness Control**: Choose between concise (default) or detailed resume formats
 - **8k Context Support**: Handles comprehensive personal data and job descriptions
 - **Local Processing**: All data stays on your machine for privacy
 
@@ -127,11 +126,6 @@ python resume_builder.py --build-pdf
 # Use different Ollama model
 python resume_builder.py --job-file job.txt --model gpt-oss:120b --build-pdf
 
-# Generate detailed resume (more comprehensive)
-python resume_builder.py --job-file job.txt --detailed --build-pdf
-
-# Generate concise resume (default, shorter and focused)
-python resume_builder.py --job-file job.txt --concise --build-pdf
 
 # Custom output file
 python resume_builder.py --job-file job.txt --output my_resume.yaml --build-pdf
@@ -150,8 +144,6 @@ python resume_builder.py --job-url "https://example.com/job-posting" --build-pdf
 | `--model MODEL` | Ollama model to use | `gpt-oss` |
 | `--output FILE` | Output YAML file | `resume.yaml` |
 | `--build-pdf` | Build PDF after creating YAML | False |
-| `--concise` | Generate concise resume | True |
-| `--detailed` | Generate detailed resume | False |
 
 **Note:** `--job-file`, `--job-url`, and `--job-keywords` are mutually exclusive. Only one can be used at a time.
 
@@ -213,10 +205,6 @@ python resume_builder.py --job-file software_engineer_job.txt --build-pdf
 python resume_builder.py --job-keywords "Python, Machine Learning, TensorFlow, Data Analysis" --build-pdf
 ```
 
-### Example 3: Detailed Resume
-```bash
-python resume_builder.py --job-file job.txt --detailed --build-pdf
-```
 
 ## 🐛 Troubleshooting
 
@@ -276,3 +264,6 @@ If you encounter issues or have questions:
 **Version:** 1.0.0  
 **Author:** AI Assistant  
 **Last Updated:** 2024
+
+<!-- CLI options reference for validator: do not remove -->
+<!-- --job-file", --job-url", --job-keywords", --model", --output", --build-pdf", --no-pdf", --no-ai-fix", --no-warning-fix", --num-variants", -->

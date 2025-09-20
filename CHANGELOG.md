@@ -8,7 +8,7 @@ All notable changes to the Resume Builder project are documented in this file.
 - Initial release of Resume Builder
 - AI-powered resume generation using Ollama
 - Support for multiple job description input methods (file, URL, keywords)
-- Concise and detailed resume generation modes
+- Professional resume generation with consistent detail level
 - YAML and PDF output formats
 - Comprehensive documentation suite
 - Setup validation and testing tools
@@ -29,8 +29,6 @@ All notable changes to the Resume Builder project are documented in this file.
   - `--model` - Configurable Ollama models
   - `--output` - Custom output file names
   - `--build-pdf` - Automatic PDF generation
-  - `--concise` - Concise resume mode (default)
-  - `--detailed` - Detailed resume mode
 
 - **Documentation**
   - Comprehensive README with examples

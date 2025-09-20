@@ -39,7 +39,6 @@ python resume_builder.py --build-pdf
 |---------------------|---------|
 | Generate resume with job file | `python resume_builder.py --job-file job.txt --build-pdf` |
 | Generate with keywords | `python resume_builder.py --job-keywords "Python, AI" --build-pdf` |
-| Generate detailed resume | `python resume_builder.py --job-file job.txt --detailed --build-pdf` |
 | Use different AI model | `python resume_builder.py --job-file job.txt --model gpt-oss:120b --build-pdf` |
 | Just YAML (no PDF) | `python resume_builder.py --job-file job.txt` |
 | Custom output name | `python resume_builder.py --job-file job.txt --output my_resume.yaml` |
@@ -63,7 +62,7 @@ python resume_builder.py --build-pdf
 
 1. **Use specific, quantified achievements** in your work history
 2. **Match keywords** from the job description in your skills
-3. **Keep it concise** - the default setting works well for most jobs
+3. Use clear, quantified achievements and align content to the role
 4. **Update your data regularly** as you gain new experiences
 5. **Test different models** if you want different writing styles
 

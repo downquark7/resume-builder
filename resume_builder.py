@@ -13,7 +13,7 @@ FEATURES:
 - Reads personal data from structured text files in data/ directory
 - Supports job description input via file, URL, or keywords
 - Uses Ollama with configurable models (gpt-oss, gpt-oss:120b, etc.)
-- Generates concise or detailed resumes based on preference
+- Generates professional resumes with a consistent level of detail
 - Converts AI output to YAML format compatible with yamlresume
 - Automatically builds PDF resumes using yamlresume
 - AI-powered YAML fixing when PDF generation fails
@@ -38,8 +38,6 @@ EXAMPLES:
     # Using keywords instead of job file
     python resume_builder.py --job-keywords "Python, Machine Learning, Data Science"
     
-    # Detailed resume (more comprehensive)
-    python resume_builder.py --job-file job.txt --detailed
     
     # Skip PDF generation (YAML only)
     python resume_builder.py --job-file job.txt --no-pdf
@@ -51,8 +49,6 @@ OPTIONS:
     --model MODEL          Ollama model to use (default: gpt-oss)
     --output FILE          Output YAML file (default: resume.yaml)
     --build-pdf            Build PDF after creating YAML
-    --concise              Generate concise resume (default: True)
-    --detailed             Generate detailed resume (overrides --concise)
     --help                 Show this help message
 
 DATA STRUCTURE:
@@ -85,6 +81,24 @@ from typing import Optional, Dict, Any
 import time
 from bs4 import BeautifulSoup
 import re
+
+
+def _open_file_cross_platform(path: str) -> None:
+    """Open a file with the default application across platforms without blocking.
+    On Windows uses os.startfile; on macOS uses 'open'; on Linux/Unix uses 'xdg-open'.
+    Fails silently with a warning print if command is unavailable.
+    """
+    try:
+        if sys.platform.startswith("win"):
+            os.startfile(path)  # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            # Assume Linux/Unix
+            subprocess.Popen(["xdg-open", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(f"Opened: {path}")
+    except Exception as e:
+        print(f"Warning: Unable to open file '{path}': {e}")
 
 
 class ResumeBuilder:
@@ -238,7 +252,7 @@ class ResumeBuilder:
         with open(self.template_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     
-    def create_prompt(self, personal_data: str, job_description: str, template: Dict[str, Any], concise: bool = True) -> str:
+    def create_prompt(self, personal_data: str, job_description: str, template: Dict[str, Any]) -> str:
         """
         Create a comprehensive prompt for the LLM.
         
@@ -249,7 +263,6 @@ class ResumeBuilder:
             personal_data (str): Combined personal data from data files
             job_description (str): Job description or keywords for tailoring
             template (Dict[str, Any]): Resume template structure
-            concise (bool): Whether to generate concise or detailed resume
             
         Returns:
             str: Formatted prompt for the LLM
@@ -270,16 +283,16 @@ class ResumeBuilder:
         {template_str}
 
         === INSTRUCTIONS ===
-        1. Produce a {"concise" if concise else "detailed"} resume that strictly matches the template structure.
+        1. Produce a detailed resume that strictly matches the template structure.
         2. Use only the personal data provided — do not invent or fabricate any information.
         3. If a job description is included, tailor the resume to highlight relevant skills, experiences, and keywords.
-        4. {"Limit to 3-4 work experiences, 5-6 skills (3-4 keywords each), and 2-3 projects." if concise else "Include 4-6 work experiences, 6-8 skills (4-6 keywords each), and 3-4 projects."}
+        4. Limit to 2-4 relevant work experiences, 5-6 skills (limit keywords to 50 characters), and 2-3 projects."
         5. Dates must be formatted as `"Sep 1, 2016"` or `"Jul 1, 2020"`. If dates are missing, omit them entirely (do not make them up).
         6. In the **work section**, include the job **location** by appending it to the company name in the `name` field (e.g., `"Acme Corp — New York, NY"`).
         7. Omit or leave null/empty any section that lacks valid data.
-        8. Summaries and descriptions must be professional and achievement-focused, not just task lists. Use bullet points ({"2-3 per item" if concise else "3-4 per item"}).
+        8. Summaries and descriptions must be professional and achievement-focused, not just task lists. Use bullet points (2-3 per item).
         9. Include keywords from the job description if they align with provided data.
-        10. If a skill is not listed in the personal data, put the skill level as Beginner or maybe Intermediate.
+        10. If a skill is not listed in the personal data but relevant for the job description, put the skill level as Beginner.
         11. Do not generate placeholder text, fake entries, or fabricated details.
         12. Return only valid JSON that conforms exactly to the template structure.
 
@@ -290,7 +303,7 @@ class ResumeBuilder:
         return prompt
     
     def generate_resume_with_ollama(self, prompt: str) -> Dict[str, Any]:
-        """Generate resume using Ollama with improved timeout handling."""
+        """Generate resume using Ollama with improved timeout handling and print timing/throughput stats."""
         try:
             print(f"Connecting to Ollama model: {self.model}")
             print("Generating resume...")
@@ -315,11 +328,45 @@ class ResumeBuilder:
             session.timeout = (30, 600)  # 30s connection timeout, 10min read timeout
             
             print("Sending request to Ollama...")
+            wall_start = time.time()
             response = session.post(ollama_url, json=payload)
+            wall_end = time.time()
             response.raise_for_status()
             
             result = response.json()
             content = result.get('response', '')
+
+            # Collect metrics from Ollama if present (nanoseconds for durations)
+            prompt_eval_count = result.get('prompt_eval_count')
+            eval_count = result.get('eval_count')
+            prompt_eval_duration_ns = result.get('prompt_eval_duration')
+            eval_duration_ns = result.get('eval_duration')
+            total_duration_ns = result.get('total_duration')
+
+            wall_seconds = max(wall_end - wall_start, 0.000001)
+            print("--- Ollama request metrics ---")
+            print(f"Wall time: {wall_seconds:.3f} s")
+            if isinstance(total_duration_ns, (int, float)):
+                print(f"Model reported total duration: {total_duration_ns/1e9:.3f} s")
+            if isinstance(prompt_eval_count, int) and isinstance(prompt_eval_duration_ns, (int, float)) and prompt_eval_duration_ns > 0:
+                pts = prompt_eval_count / (prompt_eval_duration_ns / 1e9)
+                print(f"Prompt tokens: {prompt_eval_count} | Prompt throughput: {pts:.1f} tok/s")
+            elif isinstance(prompt_eval_count, int):
+                print(f"Prompt tokens: {prompt_eval_count}")
+            if isinstance(eval_count, int) and isinstance(eval_duration_ns, (int, float)) and eval_duration_ns > 0:
+                gts = eval_count / (eval_duration_ns / 1e9)
+                print(f"Generation tokens: {eval_count} | Generation throughput: {gts:.1f} tok/s")
+            elif isinstance(eval_count, int):
+                print(f"Generation tokens: {eval_count}")
+            # Overall throughput using all known tokens over wall time
+            total_tokens = 0
+            if isinstance(prompt_eval_count, int):
+                total_tokens += prompt_eval_count
+            if isinstance(eval_count, int):
+                total_tokens += eval_count
+            if total_tokens > 0:
+                print(f"Overall tokens: {total_tokens} | Overall throughput (wall): {total_tokens / wall_seconds:.1f} tok/s")
+            print("------------------------------")
             
             if not content:
                 print("Error: Empty response from Ollama")
@@ -374,343 +421,7 @@ class ResumeBuilder:
         except Exception as e:
             print(f"Error generating resume with Ollama: {e}")
             return None
-    
-    def clean_resume_data(self, resume_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Clean resume data by removing fields with placeholder or invalid data.
-        
-        Args:
-            resume_data (Dict[str, Any]): Raw resume data from AI
-            
-        Returns:
-            Dict[str, Any]: Cleaned resume data with invalid fields removed
-        """
-        if not isinstance(resume_data, dict) or 'content' not in resume_data:
-            return resume_data
-        
-        content = resume_data['content']
-        
-        # Common placeholder patterns to remove
-        placeholder_patterns = [
-            '123 Main Street', 'Anytown', '50001', '123-456-7890',
-            'example@email.com', 'Dr. Jane Smith', 'Dr. John Doe',
-            'jane.smith@university.edu', 'john.doe@company.com',
-            '555-123-4567', '555-555-5555', '123-456-7890',
-            'https://example.com', 'https://linkedin.com/in/example',
-            'https://github.com/example', 'N/A', 'TBD', 'To be determined'
-        ]
-        
-        # Clean basic information
-        if 'basics' in content:
-            basics = content['basics']
-            
-            # Remove placeholder addresses
-            if 'location' in basics:
-                location = basics['location']
-                if any(pattern in str(location.get('address', '')).lower() for pattern in ['123 main', 'anytown', 'example']):
-                    del basics['location']
-            
-            # Remove placeholder contact info
-            if 'phone' in basics and any(pattern in str(basics['phone']) for pattern in ['555-', '123-456']):
-                del basics['phone']
-            
-            if 'email' in basics and any(pattern in str(basics['email']).lower() for pattern in ['example', 'test', 'placeholder']):
-                del basics['email']
-            
-            # Remove URL if longer than 35 characters
-            # if 'url' in basics and len(str(basics['url'])) > 35:
-            #     del basics['url']
-        
-        # Clean profiles
-        if 'profiles' in content and isinstance(content['profiles'], list):
-            content['profiles'] = [self.clean_profile_entry(profile) for profile in content['profiles'] if self.is_valid_profile_entry(profile)]
-        
-        # Clean work experience
-        if 'work' in content and isinstance(content['work'], list):
-            content['work'] = [self.clean_job_entry(job) for job in content['work'] if self.is_valid_job_entry(job)]
-        
-        # Clean projects
-        if 'projects' in content and isinstance(content['projects'], list):
-            content['projects'] = [self.clean_project_entry(project) for project in content['projects'] if self.is_valid_project_entry(project)]
-        
-        # Clean skills
-        if 'skills' in content and isinstance(content['skills'], list):
-            content['skills'] = [self.clean_skill_entry(skill) for skill in content['skills'] if self.is_valid_skill_entry(skill)]
-        
-        # Clean references
-        if 'references' in content and isinstance(content['references'], list):
-            content['references'] = [ref for ref in content['references'] if self.is_valid_reference_entry(ref)]
-        
-        # Clean awards
-        if 'awards' in content and isinstance(content['awards'], list):
-            content['awards'] = [award for award in content['awards'] if self.is_valid_award_entry(award)]
-        
-        # Clean certificates
-        if 'certificates' in content and isinstance(content['certificates'], list):
-            content['certificates'] = [self.clean_certificate_entry(cert) for cert in content['certificates'] if self.is_valid_certificate_entry(cert)]
-        
-        # Clean publications
-        if 'publications' in content and isinstance(content['publications'], list):
-            content['publications'] = [self.clean_publication_entry(pub) for pub in content['publications'] if self.is_valid_publication_entry(pub)]
-        
-        # Clean volunteer
-        if 'volunteer' in content and isinstance(content['volunteer'], list):
-            content['volunteer'] = [self.clean_volunteer_entry(vol) for vol in content['volunteer'] if self.is_valid_volunteer_entry(vol)]
-        
-        return resume_data
-    
-    def is_valid_job_entry(self, job: Dict[str, Any]) -> bool:
-        """Check if a job entry has valid data."""
-        if not isinstance(job, dict):
-            return False
-        
-        # Must have name and position
-        if not job.get('name') or not job.get('position'):
-            return False
-        
-        # Check for placeholder data
-        name = str(job.get('name', '')).lower()
-        if any(pattern in name for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        
-        return True
-    
-    def is_valid_project_entry(self, project: Dict[str, Any]) -> bool:
-        """Check if a project entry has valid data."""
-        if not isinstance(project, dict):
-            return False
-        
-        # Must have name
-        if not project.get('name'):
-            return False
-        
-        # Check for placeholder data
-        name = str(project.get('name', '')).lower()
-        if any(pattern in name for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        
-        return True
-    
-    def is_valid_skill_entry(self, skill: Dict[str, Any]) -> bool:
-        """Check if a skill entry has valid data."""
-        if not isinstance(skill, dict):
-            return False
-        
-        # Must have name and keywords
-        if not skill.get('name') or not skill.get('keywords'):
-            return False
-        
-        # Check for placeholder data
-        name = str(skill.get('name', '')).lower()
-        if any(pattern in name for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        
-        return True
-    
-    def is_valid_reference_entry(self, ref: Dict[str, Any]) -> bool:
-        """Check if a reference entry has valid data."""
-        if not isinstance(ref, dict):
-            return False
-        
-        # Must have name
-        if not ref.get('name'):
-            return False
-        
-        # Check for placeholder data
-        name = str(ref.get('name', '')).lower()
-        if any(pattern in name for pattern in ['dr. jane smith', 'dr. john doe', 'example', 'placeholder']):
-            return False
-        
-        return True
-    
-    def is_valid_award_entry(self, award: Dict[str, Any]) -> bool:
-        """Check if an award entry has valid data."""
-        if not isinstance(award, dict):
-            return False
-        
-        # Must have title
-        if not award.get('title'):
-            return False
-        
-        # Check for placeholder data
-        title = str(award.get('title', '')).lower()
-        if any(pattern in title for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        
-        return True
-    
-    def is_valid_certificate_entry(self, cert: Dict[str, Any]) -> bool:
-        """Check if a certificate entry has valid data."""
-        if not isinstance(cert, dict):
-            return False
-        
-        # Must have name
-        if not cert.get('name'):
-            return False
-        
-        # Check for placeholder data
-        name = str(cert.get('name', '')).lower()
-        if any(pattern in name for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        
-        return True
-    
-    def is_valid_publication_entry(self, pub: Dict[str, Any]) -> bool:
-        """Check if a publication entry has valid data."""
-        if not isinstance(pub, dict):
-            return False
-        
-        # Must have name
-        if not pub.get('name'):
-            return False
-        
-        # Check for placeholder data
-        name = str(pub.get('name', '')).lower()
-        if any(pattern in name for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        
-        return True
-    
-    def is_valid_volunteer_entry(self, vol: Dict[str, Any]) -> bool:
-        """Check if a volunteer entry has valid data."""
-        if not isinstance(vol, dict):
-            return False
-        
-        # Must have organization and position
-        if not vol.get('organization') or not vol.get('position'):
-            return False
-        
-        # Check for placeholder data
-        org = str(vol.get('organization', '')).lower()
-        if any(pattern in org for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        
-        return True
-    
-    def is_valid_profile_entry(self, profile: Dict[str, Any]) -> bool:
-        """Check if a profile entry has valid data."""
-        if not isinstance(profile, dict):
-            return False
-        
-        # Must have network and url
-        if not profile.get('network') or not profile.get('url'):
-            return False
-        
-        # Check for placeholder data
-        network = str(profile.get('network', '')).lower()
-        url = str(profile.get('url', '')).lower()
-        if any(pattern in network for pattern in ['example', 'placeholder', 'test', 'sample']):
-            return False
-        if any(pattern in url for pattern in ['example.com', 'placeholder', 'test']):
-            return False
-        
-        return True
-    
-    def clean_profile_entry(self, profile: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean a profile entry by limiting URLs."""
-        cleaned_profile = profile.copy()
-        
-        # Remove URL if longer than 35 characters
-        # if 'url' in cleaned_profile and len(str(cleaned_profile['url'])) > 35:
-        #     del cleaned_profile['url']
-        
-        return cleaned_profile
-    
-    def clean_job_entry(self, job: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean a job entry by limiting keywords and URLs."""
-        cleaned_job = job.copy()
-        
-        # Limit keywords to 52 characters total
-        if 'keywords' in cleaned_job and isinstance(cleaned_job['keywords'], list):
-            cleaned_keywords = []
-            total_length = 0
-            for keyword in cleaned_job['keywords']:
-                keyword_str = str(keyword)
-                if total_length + len(keyword_str) + 2 <= 52:  # +2 for comma and space
-                    cleaned_keywords.append(keyword_str)
-                    total_length += len(keyword_str) + 2
-                else:
-                    break
-            cleaned_job['keywords'] = cleaned_keywords
-        
-        # Remove URL if longer than 35 characters
-        # if 'url' in cleaned_job and len(str(cleaned_job['url'])) > 35:
-        #     del cleaned_job['url']
-        
-        return cleaned_job
-    
-    def clean_project_entry(self, project: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean a project entry by limiting keywords and URLs."""
-        cleaned_project = project.copy()
-        
-        # Limit keywords to 52 characters total
-        if 'keywords' in cleaned_project and isinstance(cleaned_project['keywords'], list):
-            cleaned_keywords = []
-            total_length = 0
-            for keyword in cleaned_project['keywords']:
-                keyword_str = str(keyword)
-                if total_length + len(keyword_str) + 2 <= 52:  # +2 for comma and space
-                    cleaned_keywords.append(keyword_str)
-                    total_length += len(keyword_str) + 2
-                else:
-                    break
-            cleaned_project['keywords'] = cleaned_keywords
-        
-        # Remove URL if longer than 35 characters
-        # if 'url' in cleaned_project and len(str(cleaned_project['url'])) > 35:
-        #     del cleaned_project['url']
-        
-        return cleaned_project
-    
-    def clean_skill_entry(self, skill: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean a skill entry by limiting keywords."""
-        cleaned_skill = skill.copy()
-        
-        # Limit keywords to 52 characters total
-        if 'keywords' in cleaned_skill and isinstance(cleaned_skill['keywords'], list):
-            cleaned_keywords = []
-            total_length = 0
-            for keyword in cleaned_skill['keywords']:
-                keyword_str = str(keyword)
-                if total_length + len(keyword_str) + 2 <= 52:  # +2 for comma and space
-                    cleaned_keywords.append(keyword_str)
-                    total_length += len(keyword_str) + 2
-                else:
-                    break
-            cleaned_skill['keywords'] = cleaned_keywords
-        
-        return cleaned_skill
-    
-    def clean_publication_entry(self, pub: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean a publication entry by limiting URLs."""
-        cleaned_pub = pub.copy()
-        
-        # Remove URL if longer than 35 characters
-        # if 'url' in cleaned_pub and len(str(cleaned_pub['url'])) > 50:
-        #     del cleaned_pub['url']
-        
-        return cleaned_pub
-    
-    def clean_certificate_entry(self, cert: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean a certificate entry by limiting URLs."""
-        cleaned_cert = cert.copy()
-        
-        # Remove URL if longer than 35 characters
-        # if 'url' in cleaned_cert and len(str(cleaned_cert['url'])) > 35:
-        #     del cleaned_cert['url']
-        
-        return cleaned_cert
-    
-    def clean_volunteer_entry(self, vol: Dict[str, Any]) -> Dict[str, Any]:
-        """Clean a volunteer entry by limiting URLs."""
-        cleaned_vol = vol.copy()
-        
-        # Remove URL if longer than 35 characters
-        # if 'url' in cleaned_vol and len(str(cleaned_vol['url'])) > 35:
-        #     del cleaned_vol['url']
-        
-        return cleaned_vol
-    
+
     def convert_json_to_yaml(self, resume_data: Dict[str, Any]) -> str:
         """Convert JSON resume data to YAML format."""
         return yaml.dump(resume_data, default_flow_style=False, allow_unicode=True, sort_keys=False)
@@ -941,7 +652,7 @@ CORRECTED YAML:"""
     
     def generate_yaml_fix_with_ollama(self, prompt: str) -> str:
         """
-        Generate YAML fix using Ollama.
+        Generate YAML fix using Ollama and print timing/throughput stats.
         
         Args:
             prompt (str): Prompt for fixing YAML
@@ -966,11 +677,43 @@ CORRECTED YAML:"""
             session = requests.Session()
             session.timeout = (30, 300)  # 5 minute timeout for YAML fixing
             
+            wall_start = time.time()
             response = session.post(ollama_url, json=payload)
+            wall_end = time.time()
             response.raise_for_status()
             
             result = response.json()
             content = result.get('response', '')
+
+            # Metrics
+            prompt_eval_count = result.get('prompt_eval_count')
+            eval_count = result.get('eval_count')
+            prompt_eval_duration_ns = result.get('prompt_eval_duration')
+            eval_duration_ns = result.get('eval_duration')
+            total_duration_ns = result.get('total_duration')
+            wall_seconds = max(wall_end - wall_start, 0.000001)
+            print("--- Ollama YAML-fix request metrics ---")
+            print(f"Wall time: {wall_seconds:.3f} s")
+            if isinstance(total_duration_ns, (int, float)):
+                print(f"Model reported total duration: {total_duration_ns/1e9:.3f} s")
+            if isinstance(prompt_eval_count, int) and isinstance(prompt_eval_duration_ns, (int, float)) and prompt_eval_duration_ns > 0:
+                pts = prompt_eval_count / (prompt_eval_duration_ns / 1e9)
+                print(f"Prompt tokens: {prompt_eval_count} | Prompt throughput: {pts:.1f} tok/s")
+            elif isinstance(prompt_eval_count, int):
+                print(f"Prompt tokens: {prompt_eval_count}")
+            if isinstance(eval_count, int) and isinstance(eval_duration_ns, (int, float)) and eval_duration_ns > 0:
+                gts = eval_count / (eval_duration_ns / 1e9)
+                print(f"Generation tokens: {eval_count} | Generation throughput: {gts:.1f} tok/s")
+            elif isinstance(eval_count, int):
+                print(f"Generation tokens: {eval_count}")
+            total_tokens = 0
+            if isinstance(prompt_eval_count, int):
+                total_tokens += prompt_eval_count
+            if isinstance(eval_count, int):
+                total_tokens += eval_count
+            if total_tokens > 0:
+                print(f"Overall tokens: {total_tokens} | Overall throughput (wall): {total_tokens / wall_seconds:.1f} tok/s")
+            print("----------------------------------------")
             
             if not content:
                 return None
@@ -1008,12 +751,13 @@ CORRECTED YAML:"""
             return None
     
     def build_resume(self, job_file: Optional[str] = None,
-                    job_url: Optional[str] = None,
-                    job_keywords: Optional[str] = None,
-                    build_pdf: bool = False,
-                    concise: bool = True,
-                    enable_ai_fix: bool = True,
-                    fix_warnings: bool = True) -> bool:
+                   job_url: Optional[str] = None,
+                   job_keywords: Optional[str] = None,
+                   build_pdf: bool = False,
+                   enable_ai_fix: bool = True,
+                   fix_warnings: bool = True,
+                   num_variants: int = 3,
+                   open_after_build: bool = False) -> bool:
         """Main method to build the resume."""
         print("Starting resume building process...")
         
@@ -1033,31 +777,58 @@ CORRECTED YAML:"""
         
         # Create prompt
         print("Creating prompt...")
-        prompt = self.create_prompt(personal_data, job_description, template, concise)
+        prompt = self.create_prompt(personal_data, job_description, template)
         
-        # Generate resume with Ollama
-        resume_data = self.generate_resume_with_ollama(prompt)
-        if not resume_data:
-            print("Failed to generate resume")
-            return False
+        all_success = True
+        for i in range(1, max(1, int(num_variants)) + 1):
+            suffix = "" if num_variants == 1 else f".{i}"
+            if num_variants != 1:
+                print(f"\n=== Generating variant {i} of {num_variants} ===")
+            
+            # Generate resume with Ollama
+            resume_data = self.generate_resume_with_ollama(prompt)
+            if not resume_data:
+                print(f"Failed to generate resume variant {i}")
+                all_success = False
+                continue
+            
+            # Convert to YAML
+            print("Converting to YAML...")
+            yaml_content = self.convert_json_to_yaml(resume_data)
+            
+            # Temporarily adjust output filename with suffix
+            original_output = self.output_file
+            if suffix:
+                base, ext = os.path.splitext(original_output)
+                self.output_file = f"{base}{suffix}{ext or '.yaml'}"
+            
+            try:
+                # Save YAML
+                if not self.save_yaml(yaml_content):
+                    all_success = False
+                    continue
+                
+                # Build PDF if requested
+                if build_pdf:
+                    if not self.build_pdf_with_warning_check(enable_ai_fix, fix_warnings):
+                        all_success = False
+                        continue
+                    # Open the PDF immediately after successful build if requested
+                    if open_after_build:
+                        try:
+                            base, ext = os.path.splitext(self.output_file)
+                            target_pdf = f"{base}.pdf"
+                            if os.path.exists(target_pdf):
+                                _open_file_cross_platform(target_pdf)
+                            else:
+                                print(f"Note: Built PDF not found to open: '{target_pdf}'")
+                        except Exception as e:
+                            print(f"Warning: Could not open PDF automatically: {e}")
+            finally:
+                # Restore original output filename for next iteration
+                self.output_file = original_output
         
-        # Clean resume data to remove placeholder/invalid data
-        print("Cleaning resume data...")
-        resume_data = self.clean_resume_data(resume_data)
-        
-        # Convert to YAML
-        print("Converting to YAML...")
-        yaml_content = self.convert_json_to_yaml(resume_data)
-        
-        # Save YAML
-        if not self.save_yaml(yaml_content):
-            return False
-        
-        # Build PDF if requested
-        if build_pdf:
-            return self.build_pdf_with_warning_check(enable_ai_fix, fix_warnings)
-        
-        return True
+        return all_success
 
 
 def main():
@@ -1069,7 +840,6 @@ Examples:
   python resume_builder.py --job-file job.txt  # PDF generated by default
   python resume_builder.py --job-url "https://example.com/job" --model gpt-oss:120b
   python resume_builder.py --job-keywords "Python, Machine Learning, Data Science"
-  python resume_builder.py --detailed  # Detailed resume
   python resume_builder.py --no-pdf  # YAML only, no PDF
         """
     )
@@ -1089,14 +859,16 @@ Examples:
                        help="Build PDF after creating YAML (default: True)")
     parser.add_argument("--no-pdf", action="store_true",
                        help="Skip PDF generation (overrides --build-pdf)")
-    parser.add_argument("--concise", action="store_true",
-                       help="Generate a concise resume")
-    parser.add_argument("--detailed", action="store_true", default=True,
-                       help="Generate a detailed resume")
     parser.add_argument("--no-ai-fix", action="store_true",
                        help="Disable AI-powered YAML fixing when PDF build fails")
     parser.add_argument("--no-warning-fix", action="store_true",
                        help="Disable AI fixing of warnings (only fix errors)")
+    parser.add_argument("--open-pdf", action="store_true", default=True,
+                       help="Open the generated PDF after building (default: True)")
+    parser.add_argument("--no-open", action="store_true",
+                       help="Do not open the PDF after building (overrides --open-pdf)")
+    parser.add_argument("-n", "--num-variants", type=int, default=3,
+                       help="Number of resume variants to generate (e.g., 3 to run Ollama 3 times)")
     
     args = parser.parse_args()
     
@@ -1105,8 +877,6 @@ Examples:
         print(f"Error: Job file '{args.job_file}' not found")
         sys.exit(1)
     
-    # Determine conciseness setting
-    concise = args.concise and not args.detailed
     
     # Determine PDF generation setting
     build_pdf = args.build_pdf and not args.no_pdf
@@ -1116,6 +886,9 @@ Examples:
     
     # Determine warning fix setting
     fix_warnings = not args.no_warning_fix
+
+    # Determine open after build setting
+    open_pdf = args.open_pdf and not args.no_open
     
     # Create resume builder
     builder = ResumeBuilder(model=args.model, output_file=args.output)
@@ -1126,13 +899,15 @@ Examples:
         job_url=args.job_url,
         job_keywords=args.job_keywords,
         build_pdf=build_pdf,
-        concise=concise,
         enable_ai_fix=enable_ai_fix,
-        fix_warnings=fix_warnings
+        fix_warnings=fix_warnings,
+        num_variants=max(1, int(args.num_variants)),
+        open_after_build=open_pdf
     )
     
     if success:
         print("Resume building completed successfully!")
+        # PDFs are already opened immediately after each build if requested.
     else:
         print("Resume building failed!")
         sys.exit(1)

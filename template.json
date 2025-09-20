@@ -126,24 +126,6 @@
         "date": "Mar 2021"
       }
     ],
-    "publications": [
-      {
-        "publisher": "ACM Transactions on Interactive Intelligent Systems",
-        "url": "https://dl.acm.org/journal/tiis",
-        "name": "Enhancing Human-Computer Interaction through Augmented Reality",
-        "releaseDate": "Dec 2017",
-        "summary": "- Explores the potential of augmented reality (AR) in improving interaction between humans and computers\n- Highlights benefits of AR in various areas such as gaming, education, healthcare, and design\n- Discusses challenges and future directions of AR technology in enhancing user experience\n"
-      }
-    ],
-    "references": [
-      {
-        "name": "Dr. Amanda Reynolds",
-        "phone": "(555) 123-4567",
-        "relationship": "Computer Science Professor",
-        "email": "amanda.reynolds@usc.edu",
-        "summary": "Andy Dufresne shows exceptional problem-solving skills and a solid understanding of programming concepts, he would bring immense value to any team or organization he becomes a part of.\n"
-      }
-    ],
     "projects": [
       {
         "name": "EduWeb",
